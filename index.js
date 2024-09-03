@@ -6,6 +6,12 @@ dotenv.config()
 import route from './route.js';
 import errorHandler from './src/config/error-handle.js';
 
+import { connect } from "./src/config/database.js";
+
+connect()
+  .then(() => console.log("Connected to the database ... "))
+  .catch((err) => console.log(err));
+
 const app = express();
 const port = process.env.PORT || 8000;
 
