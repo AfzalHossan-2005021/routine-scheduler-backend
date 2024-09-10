@@ -1,13 +1,13 @@
 export const serviceAccount = {
   "type": "service_account",
   "project_id": "buet-cse-routine-scheduler",
-  "private_key_id": "3312c1289df8bd09cc7887428733eae8f78dd0c7",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQCQlfQGKnli5DTN\n5bWZtwDMH+vRHOhEgk8ucZnbov1TQcy3VfSqWrzTWyUFmbqaUdDV26WMDNB287A6\niYDlkSTQFhd2ey7b6GgA7l2FKtnSJaRpvNpxYtMjwOmO2VcIzYkhm7GqdD18BXWq\n4ecI0gM8zwTZf7fkgXKVgKqTJ62RSGGqICvWT089ZOl4+9Hgdp2kCYZeAFHWGSUh\n4U1LO1VRbtCl0bWKgmV2FNUFerHZfTWsCrHc9PQPh6yvqcTrI7iSC+bijcBy3pHl\nIGC+yAQtG63XMfUAKShYcMUQGtFp10HkHxbuNuIIW7pgh6kDjp1Mdg0jePKsNr8M\nW8Oqn4x/AgMBAAECggEAMB5nx0GNgnb2h+vCI3U/Q6//+GlJd7tyhL9z+B/ndTT5\n364wrh1iqGi2CoYeD0vZV8Mw9koxetUhOmoWxtAmU0Z26oyWjMNtEZpC75XSRlkW\nvcYHYSMFp+mFEXCNwbU9xTyexV7IM6VRgtyJ2mqifzNaptQVrGvUaaMXob/byPSw\nqgeCoWVn5r5mJ7J/Sq2JFlBk2gHUeWgtn7DLPzEfjvs36+sW5ejadjI0ViZkWmM9\n7vhZJmOoWdxXDZGjBAM3gk2G7lGmkBMfPeFoP+icHVRAH+kqShPd42mGaJGk+jqk\nD8B1LbLRWRB6Fs7KCysPalgepIfR3YIuzdNTZYylgQKBgQDKh53W/s0dbGo/jj00\nGxPLbXYL5I7dGuERfGed1D0xNzo8Et6WmmH/Gke2fSME/2Au8W1GRH5LyytkngUT\nEpy9kaW7gOT3iN9GrtpPxHEh9WRofz7rsTC4tMq3PuiGMaWd+t4M10NU/bFnaNMT\njnA39gmT27G0TDY/2sLs7HCyPwKBgQC2whMCEnzQwnrt08drWJKPIAj3P3ETIj2R\nw5yOrtiAtSaXPJxZk7j3oRoA3lgXgrAQ7RThTJu29Lcp5MaSuQ6fAtQJ4qTvuG9M\nU7b3AvHEdu2b2ETLmmpSkBz0MZrsrYj/L8zdjpCwICJ82rRHx/5tuZXD7t0U+VwO\nGBEtfnYVwQKBgQCTRNAScM9n0NjlhCGfDP101BCdj0IPJyd31pVl39nrOrR+0F3I\n91PA8zQoT5AyZxxipi2GhfGsXX0dOgaImuUct5bi5FQaZw2sUSLwE/EL92tezQBM\n1FiQRu6NFxJv2hQK70ud3L3aRGtGvaOWueGB38eRG5R5fV2JSyKoszkzcwKBgQCu\nCyym8IxFErCXBPQI2pTYEJ35OEWq/xS7WBokF4a/K8TQijwrYm7oBFgLM7OY0DB0\nLhOQa7BvD6XPE7u3xtyRudPMhjakxHPZsG+x1PABNXEa1V7OtwNCFVQ9iXAMrUam\nHxNue3J3CGNPm8fMBD3cqLxjl3qbms177peNR72VAQKBgQCX3Ug6rGAxLP3HwtMV\nAEoQkHPiTgkHNX2PML4VclMRogMhCzwxKpYEq/uQiwrOr5gpIds4ScW6mYnc3YpM\n7rKcSkxGP/hUtCyMWcmueXmBBEbHvEICGBQwkc8Hj/L6D1A+Zw4hosr6wvNLU39/\nrc1BGxy/rFvBlHg+WZ18A6TrQg==\n-----END PRIVATE KEY-----\n",
-  "client_email": "firebase-adminsdk-bp8oa@buet-cse-routine-scheduler.iam.gserviceaccount.com",
-  "client_id": "117075624560396016455",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-bp8oa%40buet-cse-routine-scheduler.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
+  "private_key_id": "",
+  "private_key": "-----BEGIN PRIVATE KEY \n-----END PRIVATE KEY-----\n",
+  "client_email": "",
+  "client_id": "",
+  "auth_uri": "",
+  "token_uri": "",
+  "auth_provider_x509_cert_url": "",
+  "client_x509_cert_url": "",
+  "universe_domain": ""
 }
