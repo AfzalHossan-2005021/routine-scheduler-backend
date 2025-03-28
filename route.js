@@ -9,6 +9,7 @@ import assignRouter from "./src/assignment/route.js";
 import scheduleRouter from "./src/schedule/route.js";
 import dashboardRouter from "./src/dashboard/route.js";
 import pdfRouter from "./src/pdfgenerator/route.js";
+import levelTermRouter from './src/information/level_terms/route.js';
 
 
 import { authorize } from "./src/config/authorize.js";
@@ -22,6 +23,7 @@ router.use("/room", authorize(), roomRouter);
 router.use("/assign", authorize(), assignRouter);
 router.use("/course", authorize(), courseRouter);
 router.use("/schedule", authorize(), scheduleRouter);
+router.use("/level_terms", authorize(), levelTermRouter);
 
 
 router.use("/forms", formsRouter);

@@ -404,3 +404,153 @@ INSERT INTO public.courses_sections (course_id,"session",batch,"section") VALUES
 	 ('ME174','Jan-23',21,'C1'),
 	 ('ME174','Jan-23',21,'C2'),
 	 ('CSE423','Jan-23',18,'B');
+
+
+
+
+
+--------------------------------------------------------------
+ -- Stuff added after project handover
+--------------------------------------------------------------
+
+
+
+
+CREATE TABLE all_courses (
+	course_id varchar NOT NULL,
+	"name" varchar NOT NULL,
+	"type" int4 NOT NULL,
+	class_per_week float8 NOT NULL,
+  "from" varchar NOT NULL,
+  "to" varchar NOT NULL,
+  level_term varchar NOT NULL,
+	CONSTRAINT all_courses_pk PRIMARY KEY (course_id, level_term)
+);
+
+INSERT INTO all_courses (course_id, name, type, class_per_week, "from", "to", level_term) VALUES 
+('CSE101', 'Structured Programming Language', 0, 3.00, 'CSE', 'CSE', 'L-1 T-1'),
+('CSE102', 'Structured Programming Language Sessional', 1, 1.00, 'CSE', 'CSE', 'L-1 T-1'),
+('CSE103', 'Discrete Mathematics', 0, 3.00, 'CSE', 'CSE', 'L-1 T-1'),
+('EEE163', 'Introduction to Electrical Engineering', 0, 3.00, 'EEE', 'CSE', 'L-1 T-1'),
+('EEE164', 'Introduction to Electrical Engineering Sessional', 1, 1.00, 'EEE', 'CSE', 'L-1 T-1'),
+('MATH141', 'Calculus I', 0, 3.00, 'MATH', 'CSE', 'L-1 T-1'),
+('PHY129', 'Structure of Matter, Electricity & Magnetism, Wave Mechanics', 0, 3.00, 'PHY', 'CSE', 'L-1 T-1'),
+('PHY114', 'Physics Sessional', 1, 1.00, 'PHY', 'CSE', 'L-1 T-1'),
+
+-- INSERT INTO all_courses (course_id, name, type, class_per_week, "from", "to", level_term) VALUES 
+('CSE107', 'Object Oriented Programming Language', 0, 3.00, 'CSE', 'CSE', 'L-1 T-2'),
+('CSE108', 'Object Oriented Programming Language Sessional', 1, 1.00, 'CSE', 'CSE', 'L-1 T-2'),
+('CSE105', 'Data Structures and Algorithms I', 0, 3.00, 'CSE', 'CSE', 'L-1 T-2'),
+('CSE106', 'Data Structures and Algorithms I Sessional', 1, 1.00, 'CSE', 'CSE', 'L-1 T-2'),
+('CHEM113', 'Chemistry', 0, 3.00, 'CHEM', 'CSE', 'L-1 T-2'),
+('CHEM118', 'Chemistry Sessional', 1, 1.00, 'CHEM', 'CSE', 'L-1 T-2'),
+('MATH143', 'Linear Algebra', 0, 3.00, 'MATH', 'CSE', 'L-1 T-2'),
+('ME165', 'Basic Mechanical Engineering', 0, 3.00, 'ME', 'CSE', 'L-1 T-2'),
+('ME174', 'Mechanical Engineering Drawing and CAD', 1, 1.00, 'ME', 'CSE', 'L-1 T-2'),
+
+-- Level 2, Term 1 Courses
+('CSE205', 'Digital Logic Design', 0, 3.00, 'CSE', 'CSE', 'L-2 T-1'),
+('CSE206', 'Digital Logic Design Sessional', 1, 1.00, 'CSE', 'CSE', 'L-2 T-1'),
+('CSE207', 'Data Structures and Algorithms II', 0, 3.00, 'CSE', 'CSE', 'L-2 T-1'),
+('CSE208', 'Data Structures and Algorithms II Sessional', 1, 1.00, 'CSE', 'CSE', 'L-2 T-1'),
+('CSE215', 'Database', 0, 3.00, 'CSE', 'CSE', 'L-2 T-1'),
+('CSE216', 'Database Sessional', 1, 1.00, 'CSE', 'CSE', 'L-2 T-1'),
+('EEE263', 'Electronic Circuits', 0, 3.00, 'EEE', 'CSE', 'L-2 T-1'),
+('EEE264', 'Electronic Circuits Sessional', 1, 1.00, 'EEE', 'CSE', 'L-2 T-1'),
+('MATH241', 'Advanced Calculus', 0, 3.00, 'MATH', 'CSE', 'L-2 T-1'),
+
+-- Level 2, Term 2 Courses
+('CSE200', 'Technical Writing and Presentation', 0, 0.75, 'CSE', 'CSE', 'L-2 T-2'),
+('CSE209', 'Computer Architecture', 0, 3.00, 'CSE', 'CSE', 'L-2 T-2'),
+('CSE210', 'Computer Architecture Sessional', 1, 1.00, 'CSE', 'CSE', 'L-2 T-2'),
+('CSE211', 'Theory of Computation', 0, 3.00, 'CSE', 'CSE', 'L-2 T-2'),
+('CSE213', 'Software Engineering', 0, 3.00, 'CSE', 'CSE', 'L-2 T-2'),
+('CSE214', 'Software Engineering Sessional', 1, 1.00, 'CSE', 'CSE', 'L-2 T-2'),
+('CSE219', 'Signals and Linear Systems', 0, 3.00, 'CSE', 'CSE', 'L-2 T-2'),
+('CSE220', 'Signals and Linear Systems Sessional', 1, 1.00, 'CSE', 'CSE', 'L-2 T-2'),
+('MATH243', 'Probability and Statistics', 0, 3.00, 'MATH', 'CSE', 'L-2 T-2'),
+
+-- Level 3, Term 1 Courses
+('CSE301', 'Mathematics for Computing and Data Science', 0, 3.00, 'CSE', 'CSE', 'L-3 T-1'),
+('CSE309', 'Compiler', 0, 3.00, 'CSE', 'CSE', 'L-3 T-1'),
+('CSE310', 'Compiler Sessional', 1, 1.00, 'CSE', 'CSE', 'L-3 T-1'),
+('CSE313', 'Operating System', 0, 3.00, 'CSE', 'CSE', 'L-3 T-1'),
+('CSE314', 'Operating System Sessional', 1, 1.00, 'CSE', 'CSE', 'L-3 T-1'),
+('CSE315', 'Microprocessors, Microcontrollers, and Embedded Systems', 0, 3.00, 'CSE', 'CSE', 'L-3 T-1'),
+('CSE316', 'Microprocessors, Microcontrollers, and Embedded Systems Sessional', 1, 1.00, 'CSE', 'CSE', 'L-3 T-1'),
+('CSE317', 'Artificial Intelligence', 0, 3.00, 'CSE', 'CSE', 'L-3 T-1'),
+('CSE318', 'Artificial Intelligence Sessional', 1, 1.00, 'CSE', 'CSE', 'L-3 T-1'),
+
+-- Level 3, Term 2 Courses
+('CSE311', 'Data Communication', 0, 3.00, 'CSE', 'CSE', 'L-3 T-2'),
+('CSE321', 'Computer Networks', 0, 3.00, 'CSE', 'CSE', 'L-3 T-2'),
+('CSE322', 'Computer Networks Sessional', 1, 1.00, 'CSE', 'CSE', 'L-3 T-2'),
+('CSE325', 'Information Systems Development and Management', 0, 3.00, 'CSE', 'CSE', 'L-3 T-2'),
+('CSE326', 'Information Systems Development and Management Sessional', 1, 1.00, 'CSE', 'CSE', 'L-3 T-2'),
+('CSE329', 'Machine Learning', 0, 3.00, 'CSE', 'CSE', 'L-3 T-2'),
+('CSE330', 'Machine Learning Sessional', 1, 1.00, 'CSE', 'CSE', 'L-3 T-2'),
+-- ('CSE450', 'Capstone Project', 0, 1.50, 'CSE', 'CSE', 'L-3 T-2'),
+('HUM347', 'Ethics in Society and E-Governance', 0, 3.00, 'HUM', 'CSE', 'L-3 T-2'),
+
+-- Level 4, Term 1 Courses
+('CSE400', 'Project and Thesis', 0, 3.00, 'CSE', 'CSE', 'L-4 T-1'),
+('CSE401', 'Numerical Analysis, Simulation and Modeling', 0, 3.00, 'CSE', 'CSE', 'L-4 T-1'),
+('CSE402', 'Numerical Analysis, Simulation and Modeling Sessional', 1, 1.00, 'CSE', 'CSE', 'L-4 T-1'),
+('CSE405', 'Cyber Security', 0, 3.00, 'CSE', 'CSE', 'L-4 T-1'),
+('CSE406', 'Cyber Security Sessional', 1, 1.00, 'CSE', 'CSE', 'L-4 T-1'),
+('CSE450', 'Capstone Project', 0, 1.50, 'CSE', 'CSE', 'L-4 T-1'),
+('HUM475', 'Engineering Economics', 0, 3.00, 'HUM', 'CSE', 'L-4 T-1'),
+
+-- Level 4, Term 2 Courses
+('CSE400', 'Project and Thesis', 0, 3.00, 'CSE', 'CSE', 'L-4 T-2'),
+('IPE493', 'Industrial Management', 0, 3.00, 'IPE', 'CSE', 'L-4 T-2'),
+('HUM402', 'Professional Communication in English Sessional', 1, 1.00, 'HUM', 'CSE', 'L-4 T-2'),
+('HUM403', 'Communication in English', 0, 3.00, 'HUM', 'CSE', 'L-4 T-2'),
+('HUM429', 'Accounting and Entrepreneurship for IT Business', 0, 3.00, 'HUM', 'CSE', 'L-4 T-2'),
+
+-- Elective Courses from Level 4
+('CSE417', 'Cyber-Physical Systems', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE419', 'Internet of Things (IoT)', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE421', 'Basic Graph Theory', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE423', 'Fault Tolerant Systems', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE425', 'Human Computer Interaction', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE429', 'Deep Learning', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE435', 'Introduction to Quantum Computing', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE441', 'Mobile Computing', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE445', 'Data Mining and Information Retrieval', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE453', 'High Performance Database System', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE455', 'Next Generation Wireless Networks', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE457', 'Wireless Networks', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE459', 'Communication Systems', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE463', 'Bioinformatics', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE467', 'Software Architecture', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('CSE477', 'Cloud Computing', 0, 3.00, 'CSE', 'CSE', 'L-4 Elective'),
+('EEE463', 'Optical Communications', 0, 3.00, 'EEE', 'CSE', 'L-4 Elective'),
+('EEE465', 'Telecommunication Systems', 0, 3.00, 'EEE', 'CSE', 'L-4 Elective'),
+('MATH441', 'Mathematical Optimization', 0, 3.00, 'MATH', 'CSE', 'L-4 Elective'),
+('MATH443', 'Game Theory', 0, 3.00, 'MATH', 'CSE', 'L-4 Elective'),
+('PHY405', 'Quantum Mechanics', 0, 3.00, 'PHY', 'CSE', 'L-4 Elective'),
+
+-- Non-departmentals from CSE
+('CSE109', 'CSE109', 0, 3.00, 'CSE', 'EEE', 'L-1 T-1'),--
+('CSE110', 'CSE110', 1, 1, 'CSE', 'EEE', 'L-1 T-1'),--
+('CSE283', 'CSE283', 0, 3.00, 'CSE', 'BME', 'L-2 T-2'),--
+('CSE284', 'CSE284', 1, 1, 'CSE', 'BME', 'L-2 T-2'),--
+('CSE295', 'CSE295', 0, 3.00, 'CSE', 'IPE', 'L-2 T-1'),--
+('CSE287', 'CSE287', 0, 3.00, 'CSE', 'MME', 'L-2 T-1'),--
+('CSE451', 'CSE451', 0, 3.00, 'CSE', 'EEE', 'L-4 T-1'),
+('CSE281', 'CSE281', 0, 3.00, 'CSE', 'BME', 'L-2 T-1'),--
+('CSE391', 'CSE391', 0, 3.00, 'CSE', 'BME', 'L-3 T-1'),--
+('CSE495', 'CSE495', 0, 3.00, 'CSE', 'BME', 'L-4 T-1'),--
+('CSE273', 'CSE273', 0, 3.00, 'CSE', 'NCE', 'L-2 T-1'),
+('CSE296', 'CSE296', 1, 1, 'CSE', 'IPE', 'L-2 T-1'),--
+('CSE288', 'CSE288', 1, 1, 'CSE', 'MME', 'L-2 T-1'),--
+('CSE282', 'CSE282', 1, 1, 'CSE', 'BME', 'L-2 T-1'),--
+('CSE392', 'CSE392', 1, 1, 'CSE', 'BME', 'L-3 T-1'),--
+('CSE274', 'CSE274', 1, 1, 'CSE', 'NCE', 'L-2 T-1');
+('CSE170', 'CSE170', 1, 1, 'CSE', 'URP', 'L-1 T-2');
+
+
+
+
+

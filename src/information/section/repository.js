@@ -19,7 +19,7 @@ export async function saveSection(sections) {
   const level_term = sections.level_term;
 
   const query =
-    "INSERT INTO sections (batch, section,type,room,session) VALUES ($1, $2, $3, $4, $5, $6)";
+    "INSERT INTO sections (batch, section,type,room,session, level_term) VALUES ($1, $2, $3, $4, $5, $6)";
   const values = [batch, section, type, room, session, level_term];
 
   const client = await connect();
