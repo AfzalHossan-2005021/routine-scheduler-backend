@@ -1,7 +1,7 @@
 import express from 'express'
 const roomRouter = express.Router();
 
-import {getAllRoom,addRoom,editRoom,deleteRoom,getLabRooms} from "./controller.js"
+import {getAllRoom,addRoom,editRoom,deleteRoom,getLabRooms,getNonDeptLabRooms} from "./controller.js"
 import validate from "../../config/validation.js";
 import {body} from 'express-validator'
 
@@ -18,6 +18,7 @@ roomRouter.delete("/:room",deleteRoom)
 
 
 roomRouter.get("/labs",getLabRooms)
+roomRouter.get("/labs/non_dept", getNonDeptLabRooms)
 
 
 export default roomRouter;

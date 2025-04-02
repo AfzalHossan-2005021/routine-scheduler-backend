@@ -17,7 +17,7 @@ router.get("/theory/:batch/:section", getTheoryScheduleAPI);
 router.post("/theory/:batch/:section/:course", setTheoryScheduleAPI);
 
 router.get("/sessional/:batch/:section", getSessionalScheduleAPI);
-router.post("/sessional/:batch/:section", setSessionalScheduleAPI);
+router.post("/sessional/:batch/:section/:department", setSessionalScheduleAPI);
 
 router.get("/all", getAllSchedule)
 router.get("/contradiction/room/:batch/:section/:course_id", roomContradiction)

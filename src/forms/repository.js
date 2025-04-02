@@ -71,7 +71,7 @@ export async function getTheoryScheduleFormByUUID(uuid) {
     (select to_json(array_agg(row_to_json(tbl))) from 
         (select batch, "section", s.level_term,
             (select to_json(array_agg(row_to_json(tbl))) from 
-                (select sa."day", sa."time", sa.course_id from schedule_assignment sa where (sa.batch, sa."session", sa."section") = (cs.batch, cs."session", cs."section") ) tbl
+                (select sa."day", sa."time", sa.course_id from schedule_assignment sa where (sa.batch, sa."session", sa."section", sa.department) = (cs.batch, cs."session", cs."section", cs.department) ) tbl
             ) schedule 
         from courses_sections cs natural join sections s where cs.course_id = ta.course_id and cs."session" = ta."session" ) tbl
     ) sections
@@ -96,9 +96,16 @@ export async function saveTheoryScheduleForm(uuid, response) {
   const client = await connect();
   const results = await client.query(query, [uuid]);
   const course_id = results.rows[0].course_id;
+  const query2 = `
+    SELECT "to"
+    FROM courses
+    WHERE course_id = $1
+  `;
+  let dept = await client.query(query2, [course_id]);
+  dept = dept.rows[0].to;
   response.forEach((row) => {
-    const query = `insert into schedule_assignment values ($1, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $2, $3, $4, $5) ON CONFLICT DO NOTHING`;
-    const values = [course_id, row.batch, row.section, row.day, row.time];
+    const query = `insert into schedule_assignment values ($1, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`;
+    const values = [course_id, row.batch, row.section, row.day, row.time, dept];
     client.query(query, values);
   });
   client.release();

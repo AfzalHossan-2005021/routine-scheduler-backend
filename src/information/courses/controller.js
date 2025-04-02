@@ -4,6 +4,7 @@ import {
   updateCourse,
   removeCourse,
   getAllLab,
+  getNonDeptLabs
 } from "./repository.js";
 
 export async function getAllCourse(req, res, next) {
@@ -23,6 +24,10 @@ export async function addCourse(req, res, next) {
   const class_per_week = req.body.class_per_week;
   const batch = req.body.batch;
   const sections = req.body.sections;
+  const teacher_credit = req.body.teacher_credit;
+  const from = req.body.from;
+  const to = req.body.to;
+  const level_term = req.body.level_term;
 
   const Course = {
     course_id: course_id,
@@ -32,6 +37,10 @@ export async function addCourse(req, res, next) {
     class_per_week: class_per_week,
     batch: batch,
     sections: sections,
+    teacher_credit: teacher_credit,
+    from: from,
+    to: to,
+    level_term: level_term
   };
 
   try {
@@ -52,6 +61,10 @@ export async function editCourse(req, res, next) {
   const class_per_week = req.body.class_per_week;
   const batch = req.body.batch;
   const sections = req.body.sections;
+  const teacher_credit = req.body.teacher_credit;
+  const from = req.body.from;
+  const to = req.body.to;
+  const level_term = req.body.level_term;
 
   const Course = {
     course_id_old: course_id_old,
@@ -62,6 +75,10 @@ export async function editCourse(req, res, next) {
     class_per_week: class_per_week,
     batch: batch,
     sections: sections,
+    teacher_credit: teacher_credit,
+    from: from,
+    to: to,
+    level_term: level_term
   };
 
   try {
@@ -85,6 +102,15 @@ export async function deleteCourse(req, res, next) {
 export async function getLabCourses(req, res, next) {
   try {
     const Courses = await getAllLab();
+    res.status(200).json(Courses);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getNonDeptLabCourses(req, res, next) {
+  try {
+    const Courses = await getNonDeptLabs();
     res.status(200).json(Courses);
   } catch (err) {
     next(err);

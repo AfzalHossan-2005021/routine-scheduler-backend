@@ -17,10 +17,11 @@ export async function saveSection(sections) {
   const room = sections.room;
   const session = sections.session;
   const level_term = sections.level_term;
+  const department = sections.department;
 
   const query =
-    "INSERT INTO sections (batch, section,type,room,session, level_term) VALUES ($1, $2, $3, $4, $5, $6)";
-  const values = [batch, section, type, room, session, level_term];
+    "INSERT INTO sections (batch, section,type,room,session, level_term, department) VALUES ($1, $2, $3, $4, $5, $6, $7)";
+  const values = [batch, section, type, room, session, level_term, department];
 
   const client = await connect();
   const results = await client.query(query, values);
@@ -36,6 +37,7 @@ export async function saveSection(sections) {
 export async function updateSection(sections) {
   const batch = sections.batch;
   const section = sections.section;
+  const department = sections.department;
   const type = sections.type;
   const room = sections.room;
   const session = sections.session;
@@ -49,9 +51,10 @@ export async function updateSection(sections) {
       session = $5,
       level_term = $6
     WHERE batch = $1 AND
-    section = $2
+    section = $2 AND 
+    department = $7
   `;
-  const values = [batch, section, type, room, session, level_term];
+  const values = [batch, section, type, room, session, level_term, department];
   console.log(values);
 
   const client = await connect();
@@ -65,13 +68,14 @@ export async function updateSection(sections) {
   }
 }
 
-export async function removeSection(batch, section) {
+export async function removeSection(batch, section, department) {
   const query = `
     DELETE FROM sections
     WHERE batch = $1 AND
-    section = $2
+    section = $2 AND 
+    department = $3
   `;
-  const values = [batch, section];
+  const values = [batch, section, department];
 
   const client = await connect();
   const results = await client.query(query, values);

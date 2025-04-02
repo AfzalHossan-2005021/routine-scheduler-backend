@@ -18,11 +18,11 @@ import {
 } from "./repository.js";
 import { HttpError } from "../config/error-handle.js";
 
-async function sendMail(email, template, token) {
+async function sendMail(initial, email, template, token) {
   var url = process.env.URL || "http://localhost:3000";
   url = url + "/form/theory-pref/" + token;
   const msg =
-    " <h1>Please fill up this form</h1>  <a href=' " +
+    "<h2> For " + initial + ":</h2><br>" + " <h1>Please fill up this form</h1>  <a href=' " +
     url +
     " ' > " +
     url +
@@ -44,10 +44,11 @@ export async function sendTheoryPrefMail(req, res, next) {
     if (msgBody[0].key !== null && msgBody[0].key !== undefined) {
       //get all mail and initial
       const data = await getAllTeacherMail();
-      for (var i = 0; i <= 2; i++) {
+      // for (var i = 0; i <= 2; i++) {
+      for (var i = 0; i < data.length; i++) {
         const id = uuidv4();
         const row = await createForm(id, data[i].initial, "theory-pref");
-        var info = sendMail(data[i].email, msgBody[0].value, id);
+        var info = sendMail(data[i].initial, data[i].email, msgBody[0].value, id);
       }
       // data.forEach((e)=>{
       //   var info = sendMail(e.email,msgBody[0].value,uuidv4() )
@@ -129,11 +130,11 @@ export async function setLabRoomAssignemnt(req, res, next) {
   }
 }
 
-async function sendSessionalMail(email, template, token) {
+async function sendSessionalMail(initial, email, template, token) {
   var url = process.env.URL || "http://localhost:3000";
   url = url + "/form/sessional-pref/" + token;
   const msg =
-    " <h1>Please fill up this form</h1>  <a href=' " +
+    "<h2> For " + initial + ":</h2><br>" + " <h1>Please fill up this form</h1>  <a href=' " +
     url +
     " ' > " +
     url +
@@ -155,10 +156,11 @@ export async function sendSessionalPrefMail(req, res, next) {
     if (msgBody[0].key !== null && msgBody[0].key !== undefined) {
       //get all mail and initial
       const data = await getAllTeacherMail();
-      for (var i = 0; i <= 3; i++) {
+      // for (var i = 0; i <= 3; i++) {
+      for (var i = 0; i < data.length; i++) {
         const id = uuidv4();
         const row = await createForm(id, data[i].initial, "sessional-pref");
-        var info = sendSessionalMail(data[i].email, msgBody[0].value, id);
+        var info = sendSessionalMail(data[i].initial, data[i].email, msgBody[0].value, id);
       }
       // data.forEach((e)=>{
       //   var info = sendMail(e.email,msgBody[0].value,uuidv4() )

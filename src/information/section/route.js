@@ -15,14 +15,14 @@ sectionRouter.post("/",validate([
     body('room').optional().notEmpty(),
     body('session').notEmpty(),
 ]),addSection)
-sectionRouter.put("/:batch/:section",validate([
+sectionRouter.put("/:batch/:section/:department",validate([
     body('type').isNumeric().notEmpty(),
     body('room').optional().notEmpty(),
     body('session').notEmpty(),
 ]),editSection)
 
 
-sectionRouter.delete("/:batch/:section",deleteSection)
+sectionRouter.delete("/:batch/:section/:department",deleteSection)
 
 
 export default sectionRouter;

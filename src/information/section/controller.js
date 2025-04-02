@@ -22,6 +22,7 @@ export async function addSection(req, res, next) {
     room: req.body.room === "000" ? null : req.body.room,
     session: req.body.session,
     level_term: req.body.level_term || "",
+    department: req.body.department,
   };
 
   try {
@@ -36,6 +37,7 @@ export async function addSection(req, res, next) {
 export async function editSection(req, res, next) {
   const batch = req.params["batch"];
   const section = req.params["section"];
+  const department = req.params["department"];
 
   const sections = {
     batch: batch,
@@ -44,6 +46,7 @@ export async function editSection(req, res, next) {
     room: req.body.room === "000" ? null : req.body.room,
     session: req.body.session,
     level_term: req.body.level_term || "",
+    department: department
   };
 
   try {
@@ -57,9 +60,10 @@ export async function editSection(req, res, next) {
 export async function deleteSection(req, res, next) {
   const batch = req.params["batch"];
   const section = req.params["section"];
+  const department = req.params["department"];
 
   try {
-    const row = await removeSection(batch, section);
+    const row = await removeSection(batch, section, department);
     res.status(200).json({ msg: "successful" });
   } catch (err) {
     next(err);

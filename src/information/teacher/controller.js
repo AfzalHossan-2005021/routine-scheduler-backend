@@ -34,6 +34,12 @@ export async function addTeacher(req, res, next) {
     const active = req.body.active
     const theory_courses = req.body.theory_courses
     const sessional_courses = req.body.sessional_courses
+    const designation = req.body.designation
+    const full_time_status = req.body.full_time_status
+    const offers_thesis_1 = req.body.offers_thesis_1
+    const offers_thesis_2 = req.body.offers_thesis_2
+    const offers_msc = req.body.offers_msc
+    const teacher_credits_offered = req.body.teacher_credits_offered 
 
     const teacher = {
         initial: initial,
@@ -43,7 +49,13 @@ export async function addTeacher(req, res, next) {
         seniority_rank: seniority_rank,
         active: active,
         theory_courses: theory_courses,
-        sessional_courses: sessional_courses
+        sessional_courses: sessional_courses,
+        designation: designation,
+        full_time_status: full_time_status,
+        offers_thesis_1: offers_thesis_1,
+        offers_thesis_2: offers_thesis_2,
+        offers_msc: offers_msc,
+        teacher_credits_offered: teacher_credits_offered
     }
 
     try {
@@ -67,6 +79,12 @@ export async function editTeacher(req, res, next) {
     const active = req.body.active
     const theory_courses = req.body.theory_courses
     const sessional_courses = req.body.sessional_courses
+    const designation = req.body.designation
+    const full_time_status = req.body.full_time_status
+    const offers_thesis_1 = req.body.offers_thesis_1
+    const offers_thesis_2 = req.body.offers_thesis_2
+    const offers_msc = req.body.offers_msc
+    const teacher_credits_offered = req.body.teacher_credits_offered 
     
     const teacher = {
         initial: initial,
@@ -76,7 +94,13 @@ export async function editTeacher(req, res, next) {
         seniority_rank: seniority_rank,
         active: active,
         theory_courses: theory_courses,
-        sessional_courses: sessional_courses
+        sessional_courses: sessional_courses,
+        designation: designation,
+        full_time_status: full_time_status,
+        offers_thesis_1: offers_thesis_1,
+        offers_thesis_2: offers_thesis_2,
+        offers_msc: offers_msc,
+        teacher_credits_offered: teacher_credits_offered
     }
     
     

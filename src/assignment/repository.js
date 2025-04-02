@@ -19,7 +19,7 @@ export async function getTemplate(key) {
   }
 }
 export async function getAllTeacherMail() {
-  const query = "SELECT initial, email FROM teachers";
+  const query = "SELECT initial, email FROM teachers WHERE active = 1";
 
   const client = await connect();
   try {
@@ -91,7 +91,7 @@ export async function finalize() {
     await client.query("BEGIN");
 
     const teacherResponses = `
-        select f.initial, f.response 
+        select f.initial, f.response, t.theory_courses 
         from forms f 
         natural join teachers t 
         where f.type = 'theory-pref'
@@ -106,9 +106,14 @@ export async function finalize() {
         acc[row.course_id] = parseInt(row.no_of_teachers);
         return acc;
       }, {});
+    console.log(teacherResponseResults, noOfTeachersResults);
+    
     for (const row of teacherResponseResults) {
       const courses = JSON.parse(row.response);
       const initial = row.initial;
+      let theoryCourses = row.theory_courses;
+      console.log(initial, theoryCourses);
+      
       for (const course_id of courses) {
         if (
           noOfTeachersResults[course_id] === undefined ||
@@ -122,10 +127,18 @@ export async function finalize() {
           await client.query(query, values);
           if (noOfTeachersResults[course_id] !== undefined)
             noOfTeachersResults[course_id]--;
-          break;
+          console.log(`teacher: ${initial} course: ${course_id} no: ${noOfTeachersResults[course_id]}`);
+          
+          theoryCourses--;
+          if(theoryCourses <= 0){
+            break;
+          }
+          //break;
         }
       }
     }
+    console.log(noOfTeachersResults);
+    
 
     await client.query("COMMIT");
   } catch (e) {

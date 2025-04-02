@@ -1,7 +1,7 @@
 import { connect } from "../config/database.js";
 
 export async function getTheorySchedule(batch, section) {
-  const query = `select course_id, "day" , "time"  from schedule_assignment sa natural join courses c where batch = $1 and "section" = $2 and type = 0 and "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
+  const query = `select course_id, "day" , "time", department  from schedule_assignment sa natural join courses c where batch = $1 and "section" = $2 and type = 0 and "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
   const values = [batch, section];
   const client = await connect();
   const results = await client.query(query, values);
@@ -10,15 +10,26 @@ export async function getTheorySchedule(batch, section) {
 }
 
 export async function setTheorySchedule(batch, section, course, schedule) {
-  const query = `INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time") VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5)`;
+  const query = `INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department) VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6)`;
   const removeCourses = `DELETE FROM schedule_assignment WHERE batch = $1 and "section" = $2 and course_id = $3 AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
-
+  console.log(batch, section, course);
+  
+  const getQuery = `
+    SELECT "to"
+    FROM courses
+    WHERE course_id = $1
+  `;
+  const getValues = [course];
   const client = await connect();
+  const result = await client.query(getQuery, getValues);
+  console.log(result.rows);
+  
+  const department = result.rows[0].to;
   try {
     await client.query("BEGIN");
     await client.query(removeCourses, [batch, section, course]);
     for (const slot of schedule) {
-      const values = [batch, section, course, slot.day, slot.time];
+      const values = [batch, section, course, slot.day, slot.time, department];
       await client.query(query, values);
     }
     await client.query("COMMIT");
@@ -33,7 +44,7 @@ export async function setTheorySchedule(batch, section, course, schedule) {
 }
 
 export async function getSessionalSchedule(batch, section) {
-  const query = `select course_id, "day" , "time"  from schedule_assignment sa natural join courses c where batch = $1 and "section" = $2 and type = 1 and "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
+  const query = `select course_id, "day" , "time", department  from schedule_assignment sa natural join courses c where batch = $1 and "section" = $2 and type = 1 and "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
   const values = [batch, section];
   const client = await connect();
   const results = await client.query(query, values);
@@ -41,16 +52,24 @@ export async function getSessionalSchedule(batch, section) {
   return results.rows;
 }
 
-export async function setSessionalSchedule(batch, section, schedule) {
-  const query = `INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time") VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5)`;
-  const removeCourses = `DELETE FROM schedule_assignment WHERE batch = $1 and "section" = $2 AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
+export async function setSessionalSchedule(batch, section, department, schedule) {
+  const query = `INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department) VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6)`;
+  const removeCourses = `DELETE FROM schedule_assignment WHERE batch = $1 and "section" = $2 AND department = $3 AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
 
   const client = await connect();
   try {
     await client.query("BEGIN");
-    await client.query(removeCourses, [batch, section]);
+
+    await client.query(removeCourses, [batch, section, department]);
     for (const slot of schedule) {
-      const values = [batch, section, slot.course_id, slot.day, slot.time];
+      const getQuery2 = `
+        SELECT "to"
+        FROM courses
+        WHERE course_id = $1
+      `;
+      let dept = await client.query(getQuery2, [slot.course_id])
+      dept = dept.rows[0].to;
+      const values = [batch, section, slot.course_id, slot.day, slot.time, dept];
       await client.query(query, values);
     }
     await client.query("COMMIT");

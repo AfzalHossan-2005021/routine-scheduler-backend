@@ -14,9 +14,10 @@ export async function getAll() {
 export async function saveRoom(rooms) {
   const room = rooms.room;
   const type = rooms.type;
+  const active = rooms.active;
 
-  const query = "INSERT INTO rooms (room, type) VALUES ($1, $2)";
-  const values = [room, type];
+  const query = "INSERT INTO rooms (room, type, active) VALUES ($1, $2, $3)";
+  const values = [room, type, active];
 
   const client = await connect();
   const results = await client.query(query, values);
@@ -32,14 +33,16 @@ export async function saveRoom(rooms) {
 export async function updateRoom(rooms) {
   const type = rooms.type;
   const room = rooms.room;
+  const active = rooms.active;
 
   const query = `
     UPDATE rooms
   SET
-    type = $2
+    type = $2,
+    active = $3
   WHERE room = $1
   `;
-  const values = [room, type];
+  const values = [room, type, active];
 
   const client = await connect();
   const results = await client.query(query, values);
@@ -71,7 +74,17 @@ export async function removeRoom(room) {
 }
 
 export async function getLabs() {
-  const query = "SELECT * FROM rooms WHERE type = 1";
+  const query = "SELECT * FROM rooms WHERE type = 1 AND room NOT LIKE '%(%)%' AND active = TRUE ";
+
+  const client = await connect();
+  const results = await client.query(query);
+  client.release();
+
+  return results.rows;
+}
+
+export async function getNonDeptLabs(){
+  const query = "SELECT * FROM rooms  WHERE type = 1 AND room LIKE '%(%)%' AND active = TRUE ";
 
   const client = await connect();
   const results = await client.query(query);

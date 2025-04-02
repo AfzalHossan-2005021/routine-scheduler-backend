@@ -44,10 +44,14 @@ export async function saveCourse(Course) {
   const class_per_week = Course.class_per_week;
   const batch = Course.batch;
   const sections = Course.sections;
+  const from = Course.from;
+  const to = Course.to;
+  const teacher_credit = Course.teacher_credit;
+  const level_term = Course.level_term;
 
   var query =
-    "INSERT INTO courses (course_id, name, type, session, class_per_week) VALUES ($1, $2, $3, $4, $5 )";
-  var values = [course_id, name, type, session, class_per_week];
+    "INSERT INTO courses (course_id, name, type, session, class_per_week, from, to, teacher_credit, level_term) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9 )";
+  var values = [course_id, name, type, session, class_per_week, from, to, teacher_credit, level_term];
 
   var client = await connect();
   try {
@@ -56,8 +60,8 @@ export async function saveCourse(Course) {
     if (batch !== "") {
       for (let section of sections) {
         query =
-          "INSERT INTO courses_sections (course_id, session, batch, section) VALUES ($1, $2, $3, $4 )";
-        values = [course_id, session, batch, section];
+          "INSERT INTO courses_sections (course_id, session, batch, section, department) VALUES ($1, $2, $3, $4, $5 )";
+        values = [course_id, session, batch, section, to];
         const results = await client.query(query, values);
         if (results.rowCount <= 0) {
           throw new HttpError(400, "Insertion Failed");
@@ -84,6 +88,10 @@ export async function updateCourse(Course) {
   const class_per_week = Course.class_per_week;
   const batch = Course.batch;
   const sections = Course.sections;
+  const from = Course.from;
+  const to = Course.to;
+  const teacher_credit = Course.teacher_credit;
+  const level_term = Course.level_term;
 
   var query = `
   DELETE FROM courses_sections
@@ -100,17 +108,21 @@ export async function updateCourse(Course) {
     name=$2, 
     type=$3, 
     session=$4, 
-    class_per_week=$5
+    class_per_week=$5,
+    from = $6,
+    to = $7,
+    teacher_credit = $8,
+    level_term = $9
     WHERE
-    course_id=$6
+    course_id=$10
      `;
-    values = [course_id, name, type, session, class_per_week, course_id_old];
+    values = [course_id, name, type, session, class_per_week, from, to, teacher_credit, level_term, course_id_old];
     resultsIns = await client.query(query, values);
 
     for (let section of sections) {
       query =
-        "INSERT INTO courses_sections (course_id, session, batch, section) VALUES ($1, $2, $3, $4 )";
-      values = [course_id, session, batch, section];
+        "INSERT INTO courses_sections (course_id, session, batch, section, department) VALUES ($1, $2, $3, $4, $5 )";
+      values = [course_id, session, batch, section, to];
       const results = await client.query(query, values);
       if (results.rowCount <= 0) {
         throw new HttpError(400, "Insertion Failed");
@@ -146,11 +158,24 @@ export async function removeCourse(course_id) {
 
 export async function getAllLab() {
   const query =
-    "SELECT cs.course_id, cs.section, cs.batch , c.name, s.level_term \
+    "SELECT cs.course_id, cs.section, cs.batch , c.name, s.level_term, s.department \
     FROM courses_sections cs\
     JOIN courses c ON cs.course_id = c.course_id\
-    join sections s using (batch, section)\
+    join sections s using (batch, section, department)\
     WHERE cs.course_id LIKE 'CSE%' and c.type=1";
+  const client = await connect();
+  const results = await client.query(query);
+  client.release();
+  return results.rows;
+}
+
+export async function getNonDeptLabs() {
+  const query =
+    "SELECT cs.course_id, cs.section, cs.batch , c.name, s.level_term, s.department \
+    FROM courses_sections cs\
+    JOIN courses c ON cs.course_id = c.course_id\
+    join sections s using (batch, section, department)\
+    WHERE cs.course_id NOT LIKE 'CSE%' and c.type=1";
   const client = await connect();
   const results = await client.query(query);
   client.release();

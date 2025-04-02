@@ -15,11 +15,11 @@ import {
 import { createForm } from "../assignment/repository.js";
 import { HttpError } from "../config/error-handle.js";
 
-async function sendMail(email, template, token) {
+async function sendMail(initial, email, template, token) {
   var url = process.env.URL || "http://localhost:3000";
   url = url + "/form/theory-sched/" + token;
   const msg =
-    " <h1>Please fill up this form</h1>  <a href=' " +
+    "<h2> For " + initial + ":</h2><br>" + " <h1>Please fill up this form</h1>  <a href=' " +
     url +
     " ' > " +
     url +
@@ -73,10 +73,10 @@ export async function getSessionalScheduleAPI(req, res, next) {
 
 export async function setSessionalScheduleAPI(req, res, next) {
   try {
-    let { batch, section } = req.params;
+    let { batch, section, department } = req.params;
     batch = parseInt(batch);
     const schedule = req.body;
-    const ok = await setSessionalSchedule(batch, section, schedule);
+    const ok = await setSessionalSchedule(batch, section, department, schedule);
     if (ok) res.status(200).json({ msg: "successfully send", body: schedule });
     else throw new HttpError(400, "Insert Failed");
   } catch (e) {
@@ -88,7 +88,7 @@ export async function sendTheorySchedNextMail(batch) {
   const teachers = await nextInSeniority();
   for (const teacher of teachers.filter((t) => t.batch === batch)) {
     const id = teacher.id;
-    await sendMail(teacher.email, `Theory Schedule Form: ${id}`, id);
+    await sendMail(teacher.initial, teacher.email, `Theory Schedule Form: ${id}`, id);
     // console.log(teacher);
   }
 }

@@ -1,4 +1,4 @@
-import {getAll, removeRoom, saveRoom, updateRoom,getLabs } from "./repository.js"
+import {getAll, removeRoom, saveRoom, updateRoom,getLabs, getNonDeptLabs } from "./repository.js"
 
 
 export async function getAllRoom(req, res, next) {
@@ -11,13 +11,18 @@ export async function getAllRoom(req, res, next) {
 }
 
 export async function addRoom(req, res, next) {
-
+    console.log(req.body);
+    
     const room = req.body.room
     const type = req.body.type
+    const full_name = req.body.full_name
+    const active = req.body.active
 
     const rooms = {
         room: room,
-        type: type
+        type: type,
+        full_name: full_name,
+        active: active
     }
 
     try {
@@ -35,10 +40,14 @@ export async function editRoom(req, res, next) {
     const room = req.params['room']
 
     const type = req.body.type
+    const full_name = req.body.full_name
+    const active = req.body.active
 
     const rooms = {
         room: room,
-        type: type
+        type: type,
+        full_name: full_name,
+        active: active
     }
 
     try {
@@ -68,6 +77,16 @@ export async function getLabRooms(req, res, next){
 
     try{
         const rooms = await getLabs()
+        res.status(200).json(rooms)
+    }
+    catch(err){
+        next(err)
+    }
+}
+
+export async function getNonDeptLabRooms(req, res, next) {
+    try{
+        const rooms = await getNonDeptLabs();
         res.status(200).json(rooms)
     }
     catch(err){
