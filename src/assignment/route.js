@@ -12,11 +12,15 @@ import {
   sendSessionalPrefMail,
   getSessionalCurrStatus,
   finalizeSessionalPreference,
+  setTeacherAssignment,
+  setTeacherSessionalAssignment
 } from "./controller.js";
 
 router.get("/theory/initiate", sendTheoryPrefMail);
 router.get("/theory/status", getCurrStatus);
 router.get("/theory/finalize", finalizeTheoryPreference);
+router.put("/theory/set", setTeacherAssignment);
+router.put("/sessional/set", setTeacherSessionalAssignment);
 
 router.get("/sessional/initiate", sendSessionalPrefMail);
 router.get("/sessional/status", getSessionalCurrStatus);

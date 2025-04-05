@@ -155,6 +155,10 @@ async function initializeCoursesTable(activeCourses){
     const query = `
         INSERT INTO courses (course_id, session, "name", "type", class_per_week, "from", "to", teacher_credit, level_term) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
     `;
+    const query2 = `
+        INSERT INTO courses (course_id, session, "name", "type", class_per_week, "from", "to") VALUES ($1, $2, $3, $4, $5, $6, $7);
+    `;
+    const values2 = ['CT', activeCourses[0].session, 'Class Test', 0, 3, 'CSE', 'CSE'];
     const client = await connect();
     try {
         await client.query("BEGIN");
@@ -162,6 +166,7 @@ async function initializeCoursesTable(activeCourses){
             const values = [course.course_id, course.session, course.name, course.type, course.class_per_week, course.from, course.to, course.teacher_credit, course.level_term];
             await client.query(query, values);
         }
+        await client.query(query2, values2);
         await client.query("COMMIT");
     } catch (error) {
         await client.query("ROLLBACK");

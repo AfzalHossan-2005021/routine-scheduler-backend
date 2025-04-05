@@ -14,7 +14,9 @@ import {
   getSessionalPreferencesStatus,
   finalizeSessional,
   isSessionalFinalized,
-  getSessionalAssignment
+  getSessionalAssignment,
+  setTeacherAssignmentDB,
+  setTeacherSessionalAssignmentDB
 } from "./repository.js";
 import { HttpError } from "../config/error-handle.js";
 
@@ -212,5 +214,25 @@ export async function finalizeSessionalPreference(req, res, next) {
     res.status(200).json({ msg: "Finilizing Done" });
   } catch (err) {
     next(err);
+  }
+}
+
+export async function setTeacherAssignment(req, res, next){
+  const assignment = req.body;
+  try {
+    await setTeacherAssignmentDB(assignment);
+    res.status(200).json({message: "Assignment Successful"});
+  } catch (error) {
+    res.status(500).json({message: "An error occurred in server"});
+  }
+}
+
+export async function setTeacherSessionalAssignment(req, res, next){
+  const assignment = req.body;
+  try {
+    await setTeacherSessionalAssignmentDB(assignment);
+    res.status(200).json({message: "Assignment Successful"});
+  } catch (error) {
+    res.status(500).json({message: "An error occurred in server"});
   }
 }
