@@ -404,7 +404,15 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **Endpoint**: `/v1/forms/theory/pref/{form_id}`  
 - **Description**: Get the preferred theory course list from a teacher's submitted form.  
 - **Auth**: ❌  
-- **Response Body**: Preferences data.  
+- **Response Body**: 
+```
+    {
+        "initial": "MMA",
+        "name": "Dr. Md. Mashroor Ali",
+        "designation": "Professor",
+        "courses": [{...}],
+    }
+``` 
 - **Status**: 200  
 
 ### Submit Theory Course Preferences
@@ -412,41 +420,83 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **Endpoint**: `/v1/forms/theory/pref/{form_id}`  
 - **Description**: Submit the preferred theory course list for a teacher.  
 - **Auth**: ❌  
-- **Request Body**: Preferences data.  
+- **Request Body**: 
+```
+    {
+        "courses": [
+        ...
+        ]
+    }
+```
 - **Response Body**: `{"message": "Form submitted successfully"}`  
 - **Status**: 200  
 
 ### Get Theory Time Schedule Preferences
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/forms/theory/subedular/{form_id}`  
+- **Endpoint**: `/v1/forms/theory/subedule/{form_id}`  
 - **Description**: Get the preferred time schedule for theory courses from a teacher's submitted form.  
 - **Auth**: ❌  
-- **Response Body**: Schedule preferences.  
+- **Response Body**: 
+```
+    {
+        "initial": "MMA",
+        "name": "Dr. Md. Mashroor Ali",
+        "designation": "Professor",
+        "course": {...},
+        "co_teacher": [...],
+        "current_schedule": [{sec: "A", sched: ...}]
+    }
+``` 
 - **Status**: 200  
 
 ### Submit Theory Time Schedule Preferences
 - **HTTP Method**: POST  
-- **Endpoint**: `/v1/forms/theory/subedular/{form_id}`  
+- **Endpoint**: `/v1/forms/theory/subedule/{form_id}`  
 - **Description**: Submit the preferred time schedule for theory courses.  
 - **Auth**: ❌  
-- **Request Body**: Schedule preferences.  
+- **Request Body**: 
+```
+    [
+        {
+            "sec": "A",
+            "choosen_schedule": [
+            {"day": "Saturday", "time": "9:00"}, ...
+            ]
+        }, ...
+    ]
+``` 
 - **Response Body**: `{"message": "Form submitted successfully"}`  
 - **Status**: 200  
 
 ### Get Sessional Course Preferences
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/forms/massional/pref/{form_id}`  
+- **Endpoint**: `/v1/forms/sessional/pref/{form_id}`  
 - **Description**: Get the preferred sessional course list from a teacher's submitted form.  
 - **Auth**: ❌  
-- **Response Body**: Preferences data.  
+- **Response Body**: P
+```
+    {
+        "initial": "MMA",
+        "name": "Dr. Md. Mashroor Ali",
+        "designation": "Professor",
+        "courses": [{...}],
+    }
+```  
 - **Status**: 200  
 
 ### Submit Sessional Course Preferences
 - **HTTP Method**: POST  
-- **Endpoint**: `/v1/forms/massional/pref/{form_id}`  
+- **Endpoint**: `/v1/forms/sessional/pref/{form_id}`  
 - **Description**: Submit the preferred sessional course list for a teacher.  
 - **Auth**: ❌  
-- **Request Body**: Preferences data.  
+- **Request Body**: 
+```
+    {
+        "courses": [
+        ...
+        ]
+    }
+``` 
 - **Response Body**: `{"message": "Form submitted successfully"}`  
 - **Status**: 200  
 
@@ -456,61 +506,115 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 
 ### Get Current Session Info
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/configs/mession/gwt`  
+- **Endpoint**: `/v1/configs/session/get`  
 - **Description**: Get information about the current session.  
 - **Auth**: ✅  
-- **Response Body**: Session details.  
+- **Response Body**: 
+```
+    {
+        "session": "Januray 2023",
+        "type": "Undergraduate",
+        "start_date": "12-05-2023",
+        ...
+    }
+```
 - **Status**: 200 / 404  
 
 ### Update Current Session Info
 - **HTTP Method**: PATCH  
-- **Endpoint**: `/v1/configs/mession/wiki`  
+- **Endpoint**: `/v1/configs/session/edit`  
 - **Description**: Update the information of the current session.  
 - **Auth**: ✅  
-- **Request Body**: Updated session details.  
+- **Request Body**: 
+```
+    {
+        "session": "Januray 2023",
+        "type": "Undergraduate",
+        "start_date": "12-05-2023",
+        ...
+    }
+```  
 - **Response Body**: `{"message": "Session info updated successfully"}`  
 - **Status**: 200  
 
 ### Get Email Configuration
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/configs/mail/gwt`  
-- **Description**: Get email configuration details.  
+- **Endpoint**: `/v1/configs/mail/get`  
+- **Description**: Get email configuration such as password and others (which are sent to teachers) 
 - **Auth**: ✅  
-- **Response Body**: Email configuration.  
+- **Response Body**: 
+```
+    {
+        "email": "...",
+        "password": "*********",
+        ...
+    }
+``` 
 - **Status**: 200  
 
 ### Update Email Configuration
 - **HTTP Method**: PATCH  
-- **Endpoint**: `/v1/configs/mail/hels`  
+- **Endpoint**: `/v1/configs/mail/edit`  
 - **Description**: Update email configuration.  
 - **Auth**: ✅  
-- **Request Body**: Updated email configuration.  
+- **Request Body**: 
+```
+    {
+        "email": "...",
+        "password": "*********",
+        ...
+    }
+```   
 - **Response Body**: `{"message": "Email updated successfully"}`  
 - **Status**: 200  
 
 ### Get Email Templates
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/configs/templates/gwt-all`  
-- **Description**: Get email templates.  
+- **Endpoint**: `/v1/configs/templates/get-all`  
+- **Description**: Get email templates which are sent to teachers  
 - **Auth**: ✅  
-- **Response Body**: List of templates.  
+- **Response Body**: 
+```
+    [
+        {
+            "id": "theory-pref",
+            "title": "Theory Course",
+            "subtitle": "for selecting course",
+            "text": "Dear ${teacher_name}, ...",
+        }, ...
+    ]
+```
 - **Status**: 200  
 
 ### Update Email Template
 - **HTTP Method**: PATCH  
-- **Endpoint**: `/v1/configs/templates/wiki/lish`  
+- **Endpoint**: `/v1/configs/templates/edit/{id}`  
 - **Description**: Update an email template.  
 - **Auth**: ✅  
-- **Request Body**: Updated template.  
+- **Request Body**: 
+```
+    {
+        "text": "Dear ${teacher_name}, ...",
+        ...
+    }
+```
 - **Response Body**: `{"message": "Template updated successfully"}`  
 - **Status**: 200  
 
 ### Get Form Submission Progress
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/configs/tsapr/gwt`  
+- **Endpoint**: `/v1/configs/stage/get`  
 - **Description**: Get the progress of form submissions.  
 - **Auth**: ✅  
-- **Response Body**: Progress data.  
+- **Response Body**: 
+```
+    {
+        "stage": 2,
+        "title": "Schedule Collection",
+        "progress": "35%",
+        ...
+    }
+```
 - **Status**: 200  
 
 ---
@@ -521,23 +625,33 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **HTTP Method**: POST  
 - **Endpoint**: `/v1/assign/theory/initiate`  
 - **Description**: Initialize the theory course assignment process.  
-- **Auth**: ❌  
+- **Auth**: ✅  
 - **Response Body**: `{"message": "Theory schedule initiated"}`  
 - **Status**: 200  
 
 ### Get Theory Submission Status
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/assign/theory/tactus`  
+- **Endpoint**: `/v1/assign/theory/status`  
 - **Description**: Get the form submission status of teachers.  
-- **Auth**: ❌  
-- **Response Body**: Submission status data.  
+- **Auth**: ✅ 
+- **Response Body**: 
+```
+    [
+        {
+            "initial": "MMA",
+            "name": "Dr. Md. Mashroor Ali",
+            "email_time": "2023-05-01 22:03:12",
+            "status": "Submitted", ...
+        }, ...
+    ]
+```
 - **Status**: 200  
 
 ### Finalize Theory Assignment
 - **HTTP Method**: POST  
 - **Endpoint**: `/v1/assign/theory/finalize`  
 - **Description**: Complete the theory course assignment process.  
-- **Auth**: ❌  
+- **Auth**: ✅
 - **Response Body**: `{"message": "Theory schedule done"}`  
 - **Status**: 200  
 
@@ -545,7 +659,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **HTTP Method**: POST  
 - **Endpoint**: `/v1/assign/theory/mail/{initial}`  
 - **Description**: Resend email to teachers who haven't submitted the form.  
-- **Auth**: ❌  
+- **Auth**: ✅ 
 - **Response Body**: `{"message": "Emailed successfully"}`  
 - **Status**: 200  
 
@@ -553,48 +667,78 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **HTTP Method**: GET  
 - **Endpoint**: `/v1/assign/theory/current/{section}`  
 - **Description**: Get the current theory assignment of a section.  
-- **Auth**: ❌  
-- **Response Body**: Assignment data.  
+- **Auth**: ✅ 
+- **Response Body**: 
+```
+    [
+        {
+            "initial": "MMA",
+            "name": "Dr. Md. Mashroor Ali",
+            "email_time": "2023-05-01 22:03:12",
+            "status": "Submitted", ...
+        }, ...
+    ]
+```  
 - **Status**: 200  
 
 ### Initiate Sessional Assignment
 - **HTTP Method**: POST  
-- **Endpoint**: `/v1/assign/reational/finiture`  
+- **Endpoint**: `/v1/assign/sessional/initiate`  
 - **Description**: Initialize the sessional course assignment process.  
-- **Auth**: ❌  
+- **Auth**: ✅  
 - **Response Body**: `{"message": "Sessional schedule initiated"}`  
 - **Status**: 200  
 
 ### Get Sessional Submission Status
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/assign/reational/tactus`  
+- **Endpoint**: `/v1/assign/sessional/status`  
 - **Description**: Get the form submission status of teachers for sessional courses.  
-- **Auth**: ❌  
-- **Response Body**: Submission status data.  
+- **Auth**: ✅  
+- **Response Body**: 
+```
+    [
+        {
+            "initial": "MMA",
+            "name": "Dr. Md. Mashroor Ali",
+            "email_time": "2023-05-01 22:03:12",
+            "status": "Submitted", ...
+        }, ...
+    ]
+``` 
 - **Status**: 200  
 
 ### Finalize Sessional Assignment
 - **HTTP Method**: POST  
-- **Endpoint**: `/v1/assign/reational/finalize`  
+- **Endpoint**: `/v1/assign/sessional/finalize`  
 - **Description**: Complete the sessional course assignment process.  
-- **Auth**: ❌  
+- **Auth**: ✅  
 - **Response Body**: `{"message": "Sessional schedule done"}`  
 - **Status**: 200  
 
 ### Resend Sessional Assignment Email
 - **HTTP Method**: POST  
-- **Endpoint**: `/v1/assign/assions1/main1/{listid1}`  
+- **Endpoint**: `/v1/assign/sessional/mai1/{initial}`  
 - **Description**: Resend email to teachers who haven't submitted the sessional form.  
-- **Auth**: ❌  
+- **Auth**: ✅  
 - **Response Body**: `{"message": "Emailed successfully"}`  
 - **Status**: 200  
 
 ### Get Current Sessional Assignment
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/assign/assions1/marxesr/{section}`  
+- **Endpoint**: `/v1/assign/sessional/current/{section}`  
 - **Description**: Get the current sessional assignment of a section.  
-- **Auth**: ❌  
-- **Response Body**: Assignment data.  
+- **Auth**: ✅   
+- **Response Body**: 
+```
+    [
+        {
+            "initial": "MMA",
+            "name": "Dr. Md. Mashroor Ali",
+            "email_time": "2023-05-01 22:03:12",
+            "status": "Submitted", ...
+        }, ...
+    ]
+``` 
 - **Status**: 200  
 
 ---
@@ -605,7 +749,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **HTTP Method**: GET  
 - **Endpoint**: `/v1/schedule/theory/fixed/{section}`  
 - **Description**: Get the fixed time schedule for non-department courses.  
-- **Auth**: ❌  
+- **Auth**: ✅   
 - **Response Body**: Schedule data.  
 - **Status**: 200  
 
