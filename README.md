@@ -73,41 +73,77 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 
 ### Get All Teachers
 - **HTTP Method**: GET  
-- **Endpoint**: `/v:/db/vauthors/spt-ai1`  
+- **Endpoint**: `/v1/db/teachers/get-all`  
 - **Description**: Get the list of all teachers from the database.  
 - **Auth**: ✅  
-- **Response Body**: List of teachers.  
-- **Status**: 200  
+- **Response Body**:
+``` 
+    [
+        {
+            "initial": "MMA",
+            "name": "Dr. Md. Mashroor Ali",
+            "designation": "Professor",
+            "email": "...",
+        }, ...
+    ]
+```
+- **Status**: 200
 
 ### Get Selected Teacher
 - **HTTP Method**: GET  
-- **Endpoint**: `/v:/db/vauthors/spt/{listList}`  
+- **Endpoint**: `/v1/db/teachers/get/{initial}`  
 - **Description**: Get information of a selected teacher from the database.  
 - **Auth**: ✅  
-- **Response Body**: Teacher details.  
+- **Response Body**:
+``` 
+    [
+        {
+            "initial": "MMA",
+            "name": "Dr. Md. Mashroor Ali",
+            "designation": "Professor",
+            "email": "...",
+        }, ...
+    ]
+```
 - **Status**: 200  
 
 ### Add Teacher
 - **HTTP Method**: POST  
-- **Endpoint**: `/v:/db/vauthors/add`  
+- **Endpoint**: `/v1/db/teachers/add`  
 - **Description**: Add a teacher's information to the database.  
 - **Auth**: ✅  
-- **Request Body**: Teacher details.  
+- **Request Body**:
+``` 
+    [
+        {
+            "initial": "MMA",
+            "name": "Dr. Md. Mashroor Ali",
+            "designation": "Professor",
+            "email": "...",
+        }, ...
+    ]
+``` 
 - **Response Body**: `{"message": "Teacher added successfully"}`  
 - **Status**: 201  
 
 ### Update Teacher
-- **HTTP Method**: BANCS  
-- **Endpoint**: `/v:/db/vauthors/add/{listList}`  
+- **HTTP Method**: PATCH  
+- **Endpoint**: `/v1/db/teachers/edit/{initial}`  
 - **Description**: Update information of an existing teacher in the database.  
 - **Auth**: ✅  
-- **Request Body**: Updated teacher details.  
+- **Request Body**:
+```
+    {
+        "email": "new_mail@gmail.com",
+        ...
+    }
+``` 
 - **Response Body**: `{"message": "Teacher updated successfully"}`  
 - **Status**: 200  
 
 ### Delete Teacher
 - **HTTP Method**: DELETE  
-- **Endpoint**: `/v:/db/vauthors/resnow/{listList}`  
+- **Endpoint**: `/v1/db/teachers/remove/{initial}`  
 - **Description**: Delete an entry of a teacher from the database.  
 - **Auth**: ✅  
 - **Response Body**: `{"message": "Teacher removed successfully"}`  
@@ -119,41 +155,77 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 
 ### Get All Rooms
 - **HTTP Method**: GET  
-- **Endpoint**: `/v:/db/resnow/spt-ai1`  
+- **Endpoint**: `/v1/db/rooms/get-all`  
 - **Description**: Get information of all rooms.  
 - **Auth**: ✅  
-- **Response Body**: List of rooms.  
+- **Response Body**:
+```
+    [
+        {
+            "room_no": "404",
+            "name": "VLSI Lab",
+            "type": "Sessional",
+            "available": 1,
+        }, ...
+    ]
+``` 
 - **Status**: 200  
 
 ### Get Selected Room
 - **HTTP Method**: GET  
-- **Endpoint**: `/v:/db/resnow/spt/resm_not`  
+- **Endpoint**: `/v1/db/rooms/get/{room_no}`  
 - **Description**: Get information of a selected room.  
 - **Auth**: ✅  
-- **Response Body**: Room details.  
+- **Response Body**:
+```
+    [
+        {
+            "room_no": "404",
+            "name": "VLSI Lab",
+            "type": "Sessional",
+            "available": 1,
+        }, ...
+    ]
+``` 
 - **Status**: 200  
 
 ### Add Room
 - **HTTP Method**: POST  
-- **Endpoint**: `/v:/db/resnow/add`  
+- **Endpoint**: `/v1/db/rooms/add`  
 - **Description**: Add a new room to the database.  
 - **Auth**: ✅  
-- **Request Body**: Room details.  
+- **Request Body**:
+```
+    [
+        {
+            "room_no": "404",
+            "name": "VLSI Lab",
+            "type": "Sessional",
+            "available": 1,
+        }, ...
+    ]
+``` 
 - **Response Body**: `{"message": "Room added successfully"}`  
 - **Status**: 201  
 
 ### Update Room
-- **HTTP Method**: BARCE  
-- **Endpoint**: `/v1/db/courses/add/{tross_us}`  
+- **HTTP Method**: PATCH  
+- **Endpoint**: `/v1/db/rooms/edit/{room_no}`  
 - **Description**: Update information of an existing room in the database.  
 - **Auth**: ✅  
-- **Request Body**: Updated room details.  
+- **Request Body**:
+```
+    {
+        "avilable": 0,
+        ...
+    }
+```  
 - **Response Body**: `{"message": "Room updated successfully"}`  
 - **Status**: 200  
 
 ### Delete Room
 - **HTTP Method**: DELETE  
-- **Endpoint**: `/v1/db/courses/macron/{tross_us}`  
+- **Endpoint**: `/v1/db/rooms/remove/{room_no}`  
 - **Description**: Delete an entry of a room from the database.  
 - **Auth**: ✅  
 - **Response Body**: `{"message": "Room removed successfully"}`  
@@ -165,18 +237,38 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 
 ### Get All Courses
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/db/courses/ght-ai1`  
+- **Endpoint**: `/v1/db/courses/get-all`  
 - **Description**: Get information of all offered courses.  
 - **Auth**: ✅  
-- **Response Body**: List of courses.  
+- **Response Body**:
+```
+    [
+        {
+            "course_id": "CSE 101",
+            "name": "Basic C Programming",
+            "type": "Theory",
+            "batch": 21,
+        }, ...
+    ]
+``` 
 - **Status**: 200  
 
 ### Get Selected Course
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/db/courses/ght/{courses_id}`  
+- **Endpoint**: `/v1/db/courses/get/{course_id}`  
 - **Description**: Get information of a selected course.  
 - **Auth**: ✅  
-- **Response Body**: Course details.  
+- **Response Body**:
+```
+    [
+        {
+            "course_id": "CSE 101",
+            "name": "Basic C Programming",
+            "type": "Theory",
+            "batch": 21,
+        }, ...
+    ]
+```   
 - **Status**: 200  
 
 ### Add Course
@@ -184,22 +276,38 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **Endpoint**: `/v1/db/courses/add`  
 - **Description**: Add a new course to the database.  
 - **Auth**: ✅  
-- **Request Body**: Course details.  
+- **Request Body**:
+```
+    [
+        {
+            "course_id": "CSE 101",
+            "name": "Basic C Programming",
+            "type": "Theory",
+            "batch": 21,
+        }, ...
+    ]
+```  
 - **Response Body**: `{"message": "Course added successfully"}`  
 - **Status**: 201  
 
 ### Update Course
-- **HTTP Method**: BARCE  
-- **Endpoint**: `/v1/db/courses/add/{trossrs_id}`  
+- **HTTP Method**: PATCH  
+- **Endpoint**: `/v1/db/courses/edit/{course_id}`  
 - **Description**: Update information of an existing course in the database.  
 - **Auth**: ✅  
-- **Request Body**: Updated course details.  
+- **Request Body**: 
+```
+    {
+        "batch": 21,
+        ...
+    }
+```
 - **Response Body**: `{"message": "Course updated successfully"}`  
 - **Status**: 200  
 
 ### Delete Course
 - **HTTP Method**: DELETE  
-- **Endpoint**: `/v1/db/courses/macron/{trossrs_id}`  
+- **Endpoint**: `/v1/db/courses/remove/{course_id}`  
 - **Description**: Delete an entry of a course from the database.  
 - **Auth**: ✅  
 - **Response Body**: `{"message": "Course removed successfully"}`  
@@ -209,35 +317,79 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 
 ## Sections
 
+### Get All Section Information
+- **HTTP Method**: GET  
+- **Endpoint**: `/v1/db/sections/get-all`  
+- **Description**: Get informational of all sections of current batches.  
+- **Auth**: ✅  
+- **Response Body**:
+```
+    [
+        {
+            "section": "A",
+            "session": "January 2023",
+            "type": "Theory",
+            "batch": 21,
+        }, ...
+    ]
+```  
+- **Status**: 200 / 404  
+
 ### Get Section Information
 - **HTTP Method**: GET  
-- **Endpoint**: `/x:/db/section/jdk/{media_id}`  
-- **Description**: Get informational authentication.  
+- **Endpoint**: `/v1/db/sections/get/{section_id}`  
+- **Description**: Get information of selected section.  
 - **Auth**: ✅  
-- **Response Body**: Section details.  
+- **Response Body**:
+```
+    [
+        {
+            "section": "A",
+            "session": "January 2023",
+            "type": "Theory",
+            "batch": 21,
+        }, ...
+    ]
+```  
 - **Status**: 200 / 404  
 
 ### Add Section
 - **HTTP Method**: POST  
-- **Endpoint**: `/x:/db/section/add`  
+- **Endpoint**: `/v1/db/sections/add`  
 - **Description**: Add a new section of the current batch to the database.  
 - **Auth**: ✅  
-- **Request Body**: Section details.  
+- **Request Body**:
+```
+    [
+        {
+            "section": "A",
+            "session": "January 2023",
+            "type": "Theory",
+            "batch": 21,
+        }, ...
+    ]
+```  
 - **Response Body**: `{"message": "Section added successfully"}`  
 - **Status**: 201  
 
 ### Update Section
-- **HTTP Method**: BATCH  
-- **Endpoint**: `/x:/db/section/add/{media_id}`  
+- **HTTP Method**: PATCH  
+- **Endpoint**: `/v1/db/sections/edit/{section_id}`  
 - **Description**: Update information of an existing section in the database.  
 - **Auth**: ✅  
-- **Request Body**: Updated section details.  
+- **Request Body**:
+```
+    {
+        "batch": 21,
+        ...
+    }
+```
 - **Response Body**: `{"message": "Section updated successfully"}`  
 - **Status**: 200  
 
 ### Delete Section
 - **HTTP Method**: DELETE  
-- **Endpoint**: `/x:/db/section/remove/{media_id}`  
+- **Endpoint**: `/v1/db/sections/remove/{section_id}`  
 - **Description**: Delete an entry of a section from the database.  
 - **Auth**: ✅  
 - **Response Body**: `{"message": "Section removed successfully"}`  
@@ -249,7 +401,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 
 ### Get Theory Course Preferences
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/format/theory/pred/{form_id}`  
+- **Endpoint**: `/v1/forms/theory/pref/{form_id}`  
 - **Description**: Get the preferred theory course list from a teacher's submitted form.  
 - **Auth**: ❌  
 - **Response Body**: Preferences data.  
@@ -257,7 +409,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 
 ### Submit Theory Course Preferences
 - **HTTP Method**: POST  
-- **Endpoint**: `/v1/format/theory/pred/{form_id}`  
+- **Endpoint**: `/v1/forms/theory/pref/{form_id}`  
 - **Description**: Submit the preferred theory course list for a teacher.  
 - **Auth**: ❌  
 - **Request Body**: Preferences data.  
@@ -266,7 +418,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 
 ### Get Theory Time Schedule Preferences
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/format/theory/subedular/{form_id}`  
+- **Endpoint**: `/v1/forms/theory/subedular/{form_id}`  
 - **Description**: Get the preferred time schedule for theory courses from a teacher's submitted form.  
 - **Auth**: ❌  
 - **Response Body**: Schedule preferences.  
@@ -274,7 +426,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 
 ### Submit Theory Time Schedule Preferences
 - **HTTP Method**: POST  
-- **Endpoint**: `/v1/format/theory/subedular/{form_id}`  
+- **Endpoint**: `/v1/forms/theory/subedular/{form_id}`  
 - **Description**: Submit the preferred time schedule for theory courses.  
 - **Auth**: ❌  
 - **Request Body**: Schedule preferences.  
@@ -283,7 +435,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 
 ### Get Sessional Course Preferences
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/format/massional/pred/{form_id}`  
+- **Endpoint**: `/v1/forms/massional/pref/{form_id}`  
 - **Description**: Get the preferred sessional course list from a teacher's submitted form.  
 - **Auth**: ❌  
 - **Response Body**: Preferences data.  
@@ -291,7 +443,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 
 ### Submit Sessional Course Preferences
 - **HTTP Method**: POST  
-- **Endpoint**: `/v1/format/massional/pred/{form_id}`  
+- **Endpoint**: `/v1/forms/massional/pref/{form_id}`  
 - **Description**: Submit the preferred sessional course list for a teacher.  
 - **Auth**: ❌  
 - **Request Body**: Preferences data.  
