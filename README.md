@@ -750,15 +750,31 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **Endpoint**: `/v1/schedule/theory/fixed/{section}`  
 - **Description**: Get the fixed time schedule for non-department courses.  
 - **Auth**: ✅   
-- **Response Body**: Schedule data.  
+- **Response Body**: 
+```
+    [{
+        "day": "Saturday",
+        "time": "8",
+        "course_id": "CT",
+        "course_title": "Class Test",
+        ...
+    }, ...]
+``` 
 - **Status**: 200  
 
 ### Set Fixed Theory Schedule
 - **HTTP Method**: POST  
 - **Endpoint**: `/v1/schedule/theory/fixed/{section}/{day}/{time}`  
 - **Description**: Set the fixed time for non-department courses.  
-- **Auth**: ❌  
-- **Request Body**: Schedule details.  
+- **Auth**: ✅  
+- **Request Body**: 
+```
+    {
+        "course_id": "CT",
+        "course_title": "Class Test",
+        ...
+    }
+``` 
 - **Response Body**: `{"message": "Fixed Schedule set successfully"}`  
 - **Status**: 201  
 
@@ -766,7 +782,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **HTTP Method**: DELETE  
 - **Endpoint**: `/v1/schedule/theory/fixed/{section}/{day}/{time}`  
 - **Description**: Reset the fixed time for non-department courses.  
-- **Auth**: ❌  
+- **Auth**: ✅ 
 - **Response Body**: `{"message": "Fixed Schedule reset successfully"}`  
 - **Status**: 200  
 
@@ -774,7 +790,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **HTTP Method**: POST  
 - **Endpoint**: `/v1/schedule/theory/initiate`  
 - **Description**: Initialize the theory scheduling stage.  
-- **Auth**: ❌  
+- **Auth**: ✅  
 - **Response Body**: `{"message": "Theory schedule initiated"}`  
 - **Status**: 200  
 
@@ -782,15 +798,25 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **HTTP Method**: GET  
 - **Endpoint**: `/v1/schedule/theory/status`  
 - **Description**: Get the form submission status of teachers.  
-- **Auth**: ❌  
-- **Response Body**: Status data.  
+- **Auth**: ✅  
+- **Response Body**: 
+```
+    [
+        {
+            "initial": "MMA",
+            "name": "Dr. Md. Mashroor Ali",
+            "email_time": "2023-05-01 22:03:12",
+            "status": "Submitted", ...
+        }, ...
+    ]
+```  
 - **Status**: 200  
 
 ### Finalize Theory Scheduling
 - **HTTP Method**: POST  
 - **Endpoint**: `/v1/schedule/theory/finalize`  
 - **Description**: Complete the theory scheduling process.  
-- **Auth**: ❌  
+- **Auth**: ✅  
 - **Response Body**: `{"message": "Theory schedule done"}`  
 - **Status**: 200  
 
@@ -798,7 +824,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **HTTP Method**: POST  
 - **Endpoint**: `/v1/schedule/theory/mail/{initial}`  
 - **Description**: Resend email to teachers who haven't submitted the form.  
-- **Auth**: ❌  
+- **Auth**: ✅  
 - **Response Body**: `{"message": "Emailed successfully"}`  
 - **Status**: 200  
 
@@ -806,50 +832,119 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **HTTP Method**: GET  
 - **Endpoint**: `/v1/schedule/theory/current/{section}`  
 - **Description**: Get the current theory scheduling of a section.  
-- **Auth**: ❌  
-- **Response Body**: Scheduling data.  
+- **Auth**: ✅  
+- **Response Body**: 
+```
+    [
+        {
+            "initial": "MMA",
+            "name": "Dr. Md. Mashroor Ali",
+            "email_time": "2023-05-01 22:03:12",
+            "status": "Submitted", ...
+        }, ...
+    ]
+```  
 - **Status**: 200  
 
 ### Toggle Auto Email
 - **HTTP Method**: PATCH  
 - **Endpoint**: `/v1/schedule/theory/mail/auto`  
 - **Description**: Toggle automatic email sending after teacher submissions.  
-- **Auth**: ❌  
-- **Request Body**: `{"auto_mail": true/false}`  
-- **Response Body**: `{"message": "Auto email-ing is on/off"}`  
+- **Auth**: ✅  
+- **Request Body**: `{"auto_mail": true}`  
+- **Response Body**: `{"message": "Auto email-ing is on"}`  
 - **Status**: 200  
 
 ### Set Sessional Schedule
 - **HTTP Method**: POST  
-- **Endpoint**: `/v1/schedule/sessional/set/{section}/{day}/{time}`  
+- **Endpoint**: `/v1/schedule/sessional/slot/{section}/{day}/{time}`  
 - **Description**: Set the schedule for sessional courses.  
-- **Auth**: ❌  
-- **Request Body**: Schedule details.  
-- **Response Body**: `{"message": "Sessional Schedule set"}`  
+- **Auth**: ✅  
+- **Request Body**: 
+```
+    {
+        "course_id": "CT",
+        "course_title": "Class Test",
+        ...
+    }
+```  
+- **Response Body**: 
+```
+    {
+        "message": "Sessional Schedule set",
+        "conflict": {
+        "room": [{"room": "401", date: "Sat", "time":
+        2}, ...],
+        "teacher": [{"inital": "MMA", date: "Sat",
+        "time": 2}, ...]
+        }
+    }
+```  
 - **Status**: 200  
 
 ### Reset Sessional Schedule
 - **HTTP Method**: DELETE  
-- **Endpoint**: `/v1/schedule/sessional/reset/{section}/{day}/{time}`  
+- **Endpoint**: `/v1/schedule/sessional/slot/{section}/{day}/{time}`  
 - **Description**: Reset the schedule for sessional courses.  
-- **Auth**: ❌  
-- **Response Body**: `{"message": "Sessional Schedule reset"}`  
+- **Auth**: ✅   
+- **Request Body**:
+```
+    {
+        "day": "Saturday",
+        "time": "8",
+        "course_id": "CT",
+        "course_title": "Class Test",
+        ...
+    }
+```
+- **Response Body**: `
+```
+    {
+        "message": "Sessional Schedule reset",
+        "conflict": {
+        "room": [{"room": "401", date: "Sat", "time":
+        2}, ...],
+        "teacher": [{"inital": "MMA", date: "Sat",
+        "time": 2}, ...]
+        }
+    }
+```  
 - **Status**: 200  
 
 ### Get Unscheduled Sessional Courses
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/schedule/sessional/unscheduled/{section}`  
+- **Endpoint**: `/v1/schedule/sessional/unassigned/{section}`  
 - **Description**: Get the list of unscheduled sessional courses.  
-- **Auth**: ❌  
-- **Response Body**: List of courses.  
+- **Auth**: ✅  
+- **Response Body**: 
+```
+    [
+        {
+            "course_id": "CSE 102",
+            "name": "Basic C Programming Sessional",
+            "type": "Sessional",
+            "batch": 21,
+        }, ...
+    ]
+```  
 - **Status**: 200  
 
 ### Get Scheduled Sessional Courses
 - **HTTP Method**: GET  
 - **Endpoint**: `/v1/schedule/sessional/current/{section}`  
 - **Description**: Get the list of currently scheduled sessional courses.  
-- **Auth**: ❌  
-- **Response Body**: List of courses.  
+- **Auth**: ✅   
+- **Response Body**: 
+```
+    [
+        {
+            "course_id": "CSE 102",
+            "name": "Basic C Programming Sessional",
+            "type": "Sessional",
+            "batch": 21,
+        }, ...
+    ]
+```  
 - **Status**: 200  
 
 ---
