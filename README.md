@@ -55,17 +55,113 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 ### API Documentation
 
 ## Table of Contents
-- [Teachers](#teachers)
-- [Rooms](#rooms)
-- [Courses](#courses)
-- [Sections](#sections)
-- [Forms](#forms)
-- [Configurations](#configurations)
-- [Assignments](#assignments)
-- [Schedules](#schedules)
-- [Lab Rooms](#lab-rooms)
-- [Authentication](#authentication)
-- [Routines](#routines)
+- [Authentication](##authentication)
+- [Teachers](##teachers)
+- [Rooms](##rooms)
+- [Courses](##courses)
+- [Sections](##sections)
+- [Forms](##forms)
+- [Configurations](##configurations)
+- [Assignments](##assignments)
+- [Schedules](##schedules)
+- [Lab Rooms](##lab-rooms)
+- [Routines](##routines)
+
+---
+
+## Authentication
+
+### Admin Login
+- **HTTP Method**: POST  
+- **Endpoint**: `/v1/auth/login`  
+- **Description**: Authenticate admin user.  
+- **Auth**: ❌  
+- **Request Body**: 
+```
+    {
+        "adminID":"rt3210",
+        "password":"letscreateroutine"
+    }
+``` 
+- **Response Body**: 
+```
+    {
+        "jwt":"tokengh43gh43#123"
+    }
+``` 
+- **Status**: 200  
+
+### Admin Logout
+- **HTTP Method**: POST  
+- **Endpoint**: `/v1/auth/logout`  
+- **Description**: Logout admin user.  
+- **Auth**: ✅  
+- **Request Body**: 
+```
+    {
+        "jwt":"tokengh43gh43#123"
+    }
+```
+- **Response Body**: `{"message": "Logged out"}`  
+- **Status**: 200  
+
+### Update Admin Email
+- **HTTP Method**: PATCH  
+- **Endpoint**: `/v1/auth/update-mail`  
+- **Description**: Update admin email.  
+- **Auth**: ✅  
+- **Request Body**: 
+```
+    {
+        "email":"mehedi32@buet.ac.bd"
+    }
+```
+- **Response Body**: `{"message": "Email updated successfully"}`  
+- **Status**: 200  
+
+### Request Password Reset
+- **HTTP Method**: POST  
+- **Endpoint**: `/v1/auth/forgot-pass-req`  
+- **Description**: Request a password reset link via email.  
+- **Auth**: ✅  
+- **Request Body**: 
+```
+    {
+        "adminid":"rt3210"
+    }
+```  
+- **Response Body**: `{"message": "Please check mail"}`  
+- **Status**: 200  
+
+### Reset Password
+- **HTTP Method**: POST  
+- **Endpoint**: `/v1/auth/forget-pass`  
+- **Description**: Reset admin password using a token.  
+- **Auth**: ✅ 
+- **Request Body**: 
+```
+    {
+        "token":"rt3210Ajksskjadka",
+        "password": "password"
+    }
+```  
+- **Response Body**: `{"message": "Password reset successful"}`  
+- **Status**: 200  
+
+### Change Password
+- **HTTP Method**: POST  
+- **Endpoint**: `/v1/auth/update-pass`  
+- **Description**: Change admin password.  
+- **Auth**: ✅  
+- **Request Body**: 
+```
+    {
+        "oldpassword":"itsverystrong",
+        "newpassword":"itsverystrong_"
+    }
+```  
+- **Response Body**: `{"message": "Password changed"}`  
+- **Status**: 200  
 
 ---
 
@@ -955,109 +1051,91 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **HTTP Method**: POST  
 - **Endpoint**: `/v1/labroom/initiate`  
 - **Description**: Initialize the lab room assignment process.  
-- **Auth**: ❌  
+- **Auth**: ✅  
 - **Response Body**: `{"message": "Lab room assign initiated"}`  
 - **Status**: 200  
 
 ### Get Room Constraints
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/labroom/constraints/{room_no}`  
+- **Endpoint**: `/v1/labroom/constraint/{room_no}`  
 - **Description**: Get constraints of a room.  
-- **Auth**: ❌  
-- **Response Body**: Constraints data.  
+- **Auth**: ✅ 
+- **Response Body**: 
+```
+    {
+        "possible": [
+        {
+        "id": "CSE 102",
+        "title": "C Programming Sessional", ...
+        }, ...
+        ], "impossible": [...]
+    }
+```
 - **Status**: 201  
 
 ### Add Room Constraint
 - **HTTP Method**: POST  
-- **Endpoint**: `/v1/labroom/constraints/{room_no}`  
+- **Endpoint**: `/v1/labroom/constraint/{room_no}`  
 - **Description**: Add a constraint to a room.  
-- **Auth**: ❌  
-- **Request Body**: Constraint details.  
-- **Response Body**: `{"message": "Constraint added to room"}`  
+- **Auth**: ✅ 
+- **Request Body**: 
+```
+    {
+        "possible": [
+        {
+        "id": "CSE 102",
+        "title": "C Programming Sessional", ...
+        }, ...
+        ], "impossible": [...]
+    }
+``` 
+- **Response Body**: `{"message": "Constraint added to room 402"}`  
 - **Status**: 201  
 
-### Assign Room Constraint
+### Assign sessional to Room
 - **HTTP Method**: POST  
 - **Endpoint**: `/v1/labroom/assign`  
-- **Description**: Assign a constraint to a room.  
-- **Auth**: ❌  
-- **Request Body**: Assignment details.  
-- **Response Body**: `{"message": "Constraint assigned"}`  
+- **Description**: Assign sessional to a room.  
+- **Auth**: ✅  
+- **Response Body**: 
+```
+    [
+        {
+            "room_no":"402",
+            "name": "PL Lab",
+            "frequency":"4"
+        }, ...
+    ]
+``` 
 - **Status**: 200  
 
 ### View Room Assignments
 - **HTTP Method**: GET  
 - **Endpoint**: `/v1/labroom/view-assignment`  
 - **Description**: Show assignments of rooms.  
-- **Auth**: ❌  
-- **Response Body**: Assignment data.  
+- **Auth**: ✅  
+- **Response Body**: 
+```
+    [
+        {
+            "room_no":"402",
+            "name": "PL Lab",
+            "frequency":"4",
+            "assignments": [
+            {"day": "Sat", "time": 11, course: "CSE 102"},
+            ...]
+        }, ...
+    ]
+```
 - **Status**: 200  
 
 ### Confirm Room Assignment
 - **HTTP Method**: POST  
 - **Endpoint**: `/v1/labroom/confirm`  
 - **Description**: Confirm the room assignment.  
-- **Auth**: ❌  
+- **Auth**: ✅  
 - **Response Body**: `{"message": "Lab room assignment done"}`  
 - **Status**: 201  
-
----
-
-## Authentication
-
-### Admin Login
-- **HTTP Method**: POST  
-- **Endpoint**: `/v1/auth/login`  
-- **Description**: Authenticate admin user.  
-- **Auth**: ❌  
-- **Request Body**: `{"adminId": "admin123", "password": "password"}`  
-- **Response Body**: `{"token": "generated_token"}`  
-- **Status**: 200  
-
-### Admin Logout
-- **HTTP Method**: POST  
-- **Endpoint**: `/v1/auth/logout`  
-- **Description**: Logout admin user.  
-- **Auth**: ✅  
-- **Request Body**: `{"token": "generated_token"}`  
-- **Response Body**: `{"message": "Logged out"}`  
-- **Status**: 200  
-
-### Update Admin Email
-- **HTTP Method**: PATCH  
-- **Endpoint**: `/v1/auth/update-mail`  
-- **Description**: Update admin email.  
-- **Auth**: ✅  
-- **Request Body**: `{"email": "new_email@example.com"}`  
-- **Response Body**: `{"message": "Email updated successfully"}`  
-- **Status**: 200  
-
-### Request Password Reset
-- **HTTP Method**: POST  
-- **Endpoint**: `/v1/auth/forgot-pass-req`  
-- **Description**: Request a password reset link via email.  
-- **Auth**: ❌  
-- **Request Body**: `{"adminId": "admin123"}`  
-- **Response Body**: `{"message": "Please check mail"}`  
-- **Status**: 200  
-
-### Reset Password
-- **HTTP Method**: POST  
-- **Endpoint**: `/v1/auth/reset-pass`  
-- **Description**: Reset admin password using a token.  
-- **Auth**: ❌  
-- **Request Body**: `{"token": "reset_token", "password": "new_password"}`  
-- **Response Body**: `{"message": "Password reset successful"}`  
-- **Status**: 200  
-
-### Change Password
-- **HTTP Method**: POST  
-- **Endpoint**: `/v1/auth/update-pass`  
-- **Description**: Change admin password.  
-- **Auth**: ✅  
-- **Request Body**: `{"oldPassword": "old_password", "newPassword": "new_password"}`  
-- **Response Body**: `{"message": "Password changed"}`  
-- **Status**: 200  
 
 ---
 
@@ -1067,7 +1145,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **HTTP Method**: POST  
 - **Endpoint**: `/v1/routine/generate-final`  
 - **Description**: Generate the final routine.  
-- **Auth**: ❌  
+- **Auth**: ✅
 - **Response Body**: `{"message": "Routine has been generated"}`  
 - **Status**: 200  
 
@@ -1075,30 +1153,60 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **HTTP Method**: GET  
 - **Endpoint**: `/v1/routine/forstudents/{section}`  
 - **Description**: Get the generated routine from a student's perspective.  
-- **Auth**: ❌  
-- **Response Body**: Routine data.  
+- **Auth**: ✅
+- **Response Body**: 
+```
+    [
+        {
+            "day":"sun",
+            "time":"8:00",
+            "course":"cse201"
+            "teacher": ["MMA", "AKMAR"]
+        },{...},...
+    ]
+```
 - **Status**: 200  
 
 ### Get Teacher Routine
 - **HTTP Method**: GET  
 - **Endpoint**: `/v1/routine/forteacher/{initial}`  
 - **Description**: Get the generated routine from a teacher's perspective.  
-- **Auth**: ❌  
-- **Response Body**: Routine data.  
+- **Auth**: ✅ 
+- **Response Body**:
+```
+    [
+        {
+            "day":"sun",
+            "time":"8:00",
+            "course":"cse201"
+            "teacher": ["MMA", "AKMAR"]
+        },{...},...
+    ]
+```
 - **Status**: 200  
 
 ### Get Room Routine
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/routine/forroom/{room_no}`  
+- **Endpoint**: `/v1/routine/forrooms/{room_no}`  
 - **Description**: Get the generated routine from a room's perspective.  
-- **Auth**: ❌  
-- **Response Body**: Routine data.  
+- **Auth**: ✅  
+- **Response Body**: 
+```
+    [
+        {
+            "day":"sun",
+            "time":"8:00",
+            "course":"cse201"
+            "teacher": ["MMA", "AKMAR"]
+        },{...},...
+    ]
+``` 
 - **Status**: 200  
 
 ### Email Teachers Routine
 - **HTTP Method**: POST  
 - **Endpoint**: `/v1/routine/mail-teachers`  
 - **Description**: Send the final course assignment to teachers via email.  
-- **Auth**: ❌  
+- **Auth**: ✅  
 - **Response Body**: `{"message": "Email sent"}`  
 - **Status**: 200  
