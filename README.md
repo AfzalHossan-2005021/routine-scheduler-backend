@@ -167,9 +167,9 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 
 ## Teachers
 
-### Get All Teachers
+### Get All Full time Teachers
 - **HTTP Method**: GET  
-- **Endpoint**: `/v1/db/teachers/get-all`  
+- **Endpoint**: `/v1/db/teachers/get-ft`  
 - **Description**: Get the list of all teachers from the database.  
 - **Auth**: ✅  
 - **Response Body**:
@@ -180,6 +180,46 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
             "name": "Dr. Md. Mashroor Ali",
             "designation": "Professor",
             "email": "...",
+            "FT": "yes",
+        }, ...
+    ]
+```
+- **Status**: 200
+
+### Get All Part time Teachers
+- **HTTP Method**: GET  
+- **Endpoint**: `/v1/db/teachers/get-pt`  
+- **Description**: Get the list of all teachers from the database.  
+- **Auth**: ✅  
+- **Response Body**:
+``` 
+    [
+        {
+            "initial": "SDH",
+            "name": "Sadat Hossain",
+            "designation": "adjunct lecturer",
+            "email": "...",
+            "FT": "no",
+        }, ...
+    ]
+```
+- **Status**: 200
+
+
+## Get All Active Teachers
+- **HTTP Method**: GET  
+- **Endpoint**: `/v1/db/teachers/get-active`  
+- **Description**: Get the list of all active teachers from the database.  
+- **Auth**: ✅  
+- **Response Body**:
+``` 
+    [
+        {
+            "initial": "MMA",
+            "name": "Dr. Md. Mashroor Ali",
+            "designation": "Professor",
+            "email": "...",
+            "active": "yes",
         }, ...
     ]
 ```
@@ -198,6 +238,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
             "name": "Dr. Md. Mashroor Ali",
             "designation": "Professor",
             "email": "...",
+            "FT": "yes",
         }, ...
     ]
 ```
@@ -216,6 +257,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
             "name": "Dr. Md. Mashroor Ali",
             "designation": "Professor",
             "email": "...",
+            "FT": "yes",
         }, ...
     ]
 ``` 
@@ -348,6 +390,24 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
     ]
 ``` 
 - **Status**: 200  
+
+### Get Unassigned Courses
+- **HTTP Method**: GET  
+- **Endpoint**: `/v1/db/courses/get-unassigned`  
+- **Description**: Get information of all unassigned offered courses.  
+- **Auth**: ✅  
+- **Response Body**:
+```
+    [
+        {
+            "course_id": "CSE 101",
+            "name": "Basic C Programming",
+            "type": "Theory",
+            "batch": 21,
+        }, ...
+    ]
+``` 
+- **Status**: 200 
 
 ### Get Selected Course
 - **HTTP Method**: GET  
@@ -608,9 +668,9 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **Response Body**: 
 ```
     {
-        "session": "Januray 2023",
+        "session": "Januray 2025",
         "type": "Undergraduate",
-        "start_date": "12-05-2023",
+        "start_date": "06-05-2025",
         ...
     }
 ```
@@ -626,7 +686,7 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
     {
         "session": "Januray 2023",
         "type": "Undergraduate",
-        "start_date": "12-05-2023",
+        "start_date": "06-05-2025",
         ...
     }
 ```  
@@ -1141,13 +1201,33 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 
 ## Routines
 
+### Generate Routine from Partial Data
+- **HTTP Method**: POST   
+- **Endpoint**: `/v1/routine/generate-dynamic`  
+- **Description**: Generate a partial routine from current available data.  
+- **Auth**: ✅
+- **Response Body**: 
+```
+    {
+        "message": "Partial routine generated",
+        "warnings": [
+            {
+                "course_id": "CSE102",
+                "issue": "No full-time teacher assigned"
+            },
+            ...
+        ]
+    }
+```
+- **Status**: 200
+
 ### Generate Final Routine
 - **HTTP Method**: POST  
 - **Endpoint**: `/v1/routine/generate-final`  
 - **Description**: Generate the final routine.  
 - **Auth**: ✅
 - **Response Body**: `{"message": "Routine has been generated"}`  
-- **Status**: 200  
+- **Status**: 200
 
 ### Get Student Routine
 - **HTTP Method**: GET  
@@ -1165,7 +1245,35 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
         },{...},...
     ]
 ```
-- **Status**: 200  
+- **Status**: 200 
+
+### Notify Teachers on Routine Change
+- **Endpoint**: /v1/routine/notify-change
+- **Method**: POST
+- **Description**: Send email notifications to teachers whose routine has changed.
+- **Auth**: ✅
+- **Request Body**:
+```
+    {
+        "changes": [
+            {
+            "teacher_initial": "MMA",
+            "day": "Sunday",
+            "time": "10:00",
+            "old_course": "CSE101",
+            "new_course": "CSE202"
+            },
+            ...
+        ]
+    }
+```
+- **Response Body**:
+```
+    {
+        "message": "Notifications sent to affected teachers"
+    }
+```
+- **Status**: 200 
 
 ### Get Teacher Routine
 - **HTTP Method**: GET  
@@ -1209,4 +1317,4 @@ To change the credentials, [generate a bcrypt hash](https://bcrypt-generator.com
 - **Description**: Send the final course assignment to teachers via email.  
 - **Auth**: ✅  
 - **Response Body**: `{"message": "Email sent"}`  
-- **Status**: 200  
+- **Status**: 200
