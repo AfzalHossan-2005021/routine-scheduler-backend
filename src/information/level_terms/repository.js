@@ -17,7 +17,9 @@ export async function getAll(){
                     AND s.type = 0
         GROUP BY 
             ltu.department, 
-            ltu.level_term
+            ltu.level_term,
+            ltu.active,
+            ltu.batch
         ORDER BY 
             ltu.department, 
             ltu.level_term;
@@ -162,6 +164,7 @@ async function initializeCoursesTable(activeCourses){
     const client = await connect();
     try {
         await client.query("BEGIN");
+        console.log(activeCourses);
         for(const course of activeCourses){
             const values = [course.course_id, course.session, course.name, course.type, course.class_per_week, course.from, course.to, course.teacher_credit, course.level_term];
             await client.query(query, values);

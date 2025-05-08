@@ -15,13 +15,11 @@ export async function addRoom(req, res, next) {
     
     const room = req.body.room
     const type = req.body.type
-    const full_name = req.body.full_name
     const active = req.body.active
 
     const rooms = {
         room: room,
         type: type,
-        full_name: full_name,
         active: active
     }
 
@@ -40,13 +38,11 @@ export async function editRoom(req, res, next) {
     const room = req.params['room']
 
     const type = req.body.type
-    const full_name = req.body.full_name
     const active = req.body.active
 
     const rooms = {
         room: room,
         type: type,
-        full_name: full_name,
         active: active
     }
 

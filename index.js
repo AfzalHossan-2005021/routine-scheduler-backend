@@ -16,10 +16,12 @@ const app = express();
 const port = process.env.PORT || 8000;
 
 
-app.use(cors())
+app.use(cors({
+  origin: 'http://localhost:3000', // Allow only the frontend's origin
+  credentials: true, // Allow cookies if needed
+}));
 
 app.use(express.json());
-app.use(cors());
 app.use("/v1", route);
 app.use(errorHandler);
 
