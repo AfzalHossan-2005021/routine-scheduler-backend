@@ -1,14 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config();
-import nodemailer from "nodemailer";
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    // TODO: replace `user` and `pass` values from <https://forwardemail.net>
-    user: process.env.SENDEREMAIL,
-    pass: process.env.SENDERPASSWORD,
-  },
-});
+import { Resend } from 'resend';
 
-export { transporter };
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export { resend };

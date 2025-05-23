@@ -1,4 +1,4 @@
-import { transporter } from "../config/mail.js";
+import { resend } from "../config/mail.js";
 import { v4 as uuidv4 } from "uuid";
 import {
   getTheorySchedule,
@@ -12,23 +12,23 @@ import {
   roomContradictionDB,
   teacherContradictionDB,
 } from "./repository.js";
-import { createForm } from "../assignment/repository.js";
+import { createForm, getTemplate } from "../assignment/repository.js";
 import { HttpError } from "../config/error-handle.js";
 
 async function sendMail(initial, email, template, token) {
   var url = process.env.URL || "http://localhost:3000";
   url = url + "/form/theory-sched/" + token;
   const msg =
+    "<p>" + template + "</p>" +
     "<h2> For " + initial + ":</h2><br>" + " <h1>Please fill up this form</h1>  <a href=' " +
     url +
     " ' > " +
     url +
     "</a>";
-  const info = await transporter.sendMail({
-    from: "BUET CSE Routine Team",
+  const info = await resend.emails.send({
+    from: 'Routine_Scheduler <onboarding@resend.dev>',
     to: email,
     subject: "Theory Schedule Form",
-    text: template,
     html: msg,
   });
   return info;
@@ -85,11 +85,20 @@ export async function setSessionalScheduleAPI(req, res, next) {
 }
 
 export async function sendTheorySchedNextMail(batch) {
-  const teachers = await nextInSeniority();
-  for (const teacher of teachers.filter((t) => t.batch === batch)) {
-    const id = teacher.id;
-    await sendMail(teacher.initial, teacher.email, `Theory Schedule Form: ${id}`, id);
-    // console.log(teacher);
+  try {
+    const msgBody = await getTemplate("SCHEDULE_EMAIL");
+    if (msgBody[0].key === null || msgBody[0].key === undefined) {
+      const teachers = await nextInSeniority();
+      for (const teacher of teachers.filter((t) => t.batch === batch)) {
+        const id = teacher.id;
+        await sendMail(teacher.initial, teacher.email, `Theory Schedule Form: ${id}`, id);
+        console.log(teacher);
+      } 
+    } else {
+      next(new HttpError(400, "Template not found"));
+    }
+  } catch (err) {
+    next(err);
   }
 }
 

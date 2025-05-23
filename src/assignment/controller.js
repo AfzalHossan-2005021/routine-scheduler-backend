@@ -1,4 +1,4 @@
-import { transporter } from "../config/mail.js";
+import { resend } from "../config/mail.js";
 import { v4 as uuidv4 } from "uuid";
 import {
   getTemplate,
@@ -24,16 +24,16 @@ async function sendMail(initial, email, template, token) {
   var url = process.env.URL || "http://localhost:3000";
   url = url + "/form/theory-pref/" + token;
   const msg =
+    "<p>" + template + "</p>" +
     "<h2> For " + initial + ":</h2><br>" + " <h1>Please fill up this form</h1>  <a href=' " +
     url +
     " ' > " +
     url +
     "</a>";
-  const info = await transporter.sendMail({
-    from: "BUET CSE Routine Team",
+  const info = await resend.emails.send({
+    from: 'Routine_Scheduler <onboarding@resend.dev>',
     to: email,
     subject: "Theory Preferences Form",
-    text: template,
     html: msg,
   });
   return info;
@@ -41,7 +41,7 @@ async function sendMail(initial, email, template, token) {
 
 export async function sendTheoryPrefMail(req, res, next) {
   try {
-    const msgBody = await getTemplate("demo");
+    const msgBody = await getTemplate("THEORY_EMAIL");
 
     if (msgBody[0].key !== null && msgBody[0].key !== undefined) {
       //get all mail and initial
@@ -50,12 +50,10 @@ export async function sendTheoryPrefMail(req, res, next) {
       for (var i = 0; i < data.length; i++) {
         const id = uuidv4();
         const row = await createForm(id, data[i].initial, "theory-pref");
-        var info = sendMail(data[i].initial, data[i].email, msgBody[0].value, id);
+        var info = await sendMail(data[i].initial, data[i].email, msgBody[0].value, id);
+        console.log(info.messageId);
+        await delay(600); // Wait 600ms between requests to avoid rate limit
       }
-      // data.forEach((e)=>{
-      //   var info = sendMail(e.email,msgBody[0].value,uuidv4() )
-      //   console.log(info.messageId)
-      // })
       res.status(200).json({ msg: "successfully send" });
     } else {
       next(new HttpError(400, "Template not found"));
@@ -136,16 +134,16 @@ async function sendSessionalMail(initial, email, template, token) {
   var url = process.env.URL || "http://localhost:3000";
   url = url + "/form/sessional-pref/" + token;
   const msg =
+    "<p>" + template + "</p>" +
     "<h2> For " + initial + ":</h2><br>" + " <h1>Please fill up this form</h1>  <a href=' " +
     url +
     " ' > " +
     url +
     "</a>";
-  const info = await transporter.sendMail({
-    from: "BUET CSE Routine Team",
+  const info = await resend.emails.send({
+    from: 'Routine_Scheduler <onboarding@resend.dev>',
     to: email,
     subject: "Sessional Preferences Form",
-    text: template,
     html: msg,
   });
   return info;
@@ -153,7 +151,7 @@ async function sendSessionalMail(initial, email, template, token) {
 
 export async function sendSessionalPrefMail(req, res, next) {
   try {
-    const msgBody = await getTemplate("demo");
+    const msgBody = await getTemplate("SESSIONAL_EMAIL");
 
     if (msgBody[0].key !== null && msgBody[0].key !== undefined) {
       //get all mail and initial
@@ -163,11 +161,9 @@ export async function sendSessionalPrefMail(req, res, next) {
         const id = uuidv4();
         const row = await createForm(id, data[i].initial, "sessional-pref");
         var info = sendSessionalMail(data[i].initial, data[i].email, msgBody[0].value, id);
+        console.log(info.messageId);
+        await delay(600); // Wait 600ms between requests to avoid rate limit
       }
-      // data.forEach((e)=>{
-      //   var info = sendMail(e.email,msgBody[0].value,uuidv4() )
-      //   console.log(info.messageId)
-      // })
       res.status(200).json({ msg: "successfully send" });
     } else {
       next(new HttpError(400, "Template not found"));
@@ -235,4 +231,8 @@ export async function setTeacherSessionalAssignment(req, res, next){
   } catch (error) {
     res.status(500).json({message: "An error occurred in server"});
   }
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
