@@ -16,7 +16,9 @@ import {
   isSessionalFinalized,
   getSessionalAssignment,
   setTeacherAssignmentDB,
-  setTeacherSessionalAssignmentDB
+  setTeacherSessionalAssignmentDB,
+  getTeacherMailByInitial,
+  getFormIdByInitialAndType
 } from "./repository.js";
 import { HttpError } from "../config/error-handle.js";
 
@@ -235,4 +237,44 @@ export async function setTeacherSessionalAssignment(req, res, next){
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export async function resendFormMailHandler({ initial, email, token, type }) {
+  try {
+    // Use sendMail for theory-pref, sendSessionalMail for sessional-pref
+    if (type === 'theory-pref') {
+      return await sendMail(initial, email, (await getTemplate('THEORY_EMAIL'))[0].value, token);
+    } else if (type === 'sessional-pref') {
+      return await sendSessionalMail(initial, email, (await getTemplate('SESSIONAL_EMAIL'))[0].value, token);
+    } else {
+      throw new HttpError(400, 'Invalid form type');
+    }
+  } catch (err) {
+    throw err;
+  }
+}
+
+export async function resendTheoryPrefMail(req, res, next) {
+  try {
+    const initial = req.params["initial"];
+    const email = await getTeacherMailByInitial(initial);
+    const token = await getFormIdByInitialAndType(initial, 'theory-pref');
+    console.log(`Resending theory preference mail to ${initial}.`);
+    await resendFormMailHandler({ initial, email, token, type: 'theory-pref' });
+    res.status(200).json({ msg: 'Theory preference mail resent successfully' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function resendSessionalPrefMail(req, res, next) {
+  try {
+    const initial = req.params["initial"];
+    const email = await getTeacherMailByInitial(initial);
+    const token = await getFormIdByInitialAndType(initial, 'sessional-pref');
+    await resendFormMailHandler({ initial, email, token, type: 'sessional-pref' });
+    res.status(200).json({ msg: 'Sessional preference mail resent successfully' });
+  } catch (err) {
+    next(err);
+  }
 }

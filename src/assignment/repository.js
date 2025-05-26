@@ -33,6 +33,19 @@ export async function getAllTeacherMail() {
   }
 }
 
+export async function getTeacherMailByInitial(initial) {
+  const query = "SELECT email FROM teachers WHERE initial = $1 AND active = 1";
+  const values = [initial];
+  const client = await connect();
+  try {
+    const results = await client.query(query, values);
+    if (results.rows.length <= 0) throw new HttpError(404, "Teacher not found");
+    return results.rows[0].email;
+  } finally {
+    client.release();
+  }
+}
+
 export async function createForm(id, initial, type) {
   const query = "INSERT INTO forms (id, type, initial) VALUES ($1, $2, $3)";
   const values = [id, type, initial];
@@ -433,6 +446,19 @@ export async function setTeacherSessionalAssignmentDB(assignment){
     await client.query("ROLLBACK");
     console.log(error);
     throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function getFormIdByInitialAndType(initial, type) {
+  const query = "SELECT id FROM forms WHERE initial = $1 AND type = $2";
+  const values = [initial, type];
+  const client = await connect();
+  try {
+    const results = await client.query(query, values);
+    if (results.rows.length <= 0) throw new HttpError(404, "Form not found or already submitted");
+    return results.rows[0].id;
   } finally {
     client.release();
   }
