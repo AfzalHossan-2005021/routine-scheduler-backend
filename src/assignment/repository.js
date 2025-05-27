@@ -78,8 +78,10 @@ export async function getTheoryPreferencesStatus() {
 
 export async function isFinalized() {
   const query = `SELECT COUNT(*) FROM teacher_assignment WHERE "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
+  //const query2 = `SELECT COUNT(*) FROM teachers where active = 1`;
   const client = await connect();
   const results = await client.query(query);
+  //const results2 = await client.query(query2);
   client.release();
   if (results.rows.length <= 0 || results.rows[0].count === "0") return false;
   else return true;
@@ -88,13 +90,19 @@ export async function isFinalized() {
 export async function finalize() {
   const client = await connect();
   try {
+    const deleteAllQuery = `
+      DELETE FROM teacher_assignment 
+      WHERE session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    `;
+    await client.query(deleteAllQuery);
+
     await client.query("BEGIN");
 
     const teacherResponses = `
         select f.initial, f.response, t.theory_courses 
         from forms f 
         natural join teachers t 
-        where f.type = 'theory-pref'
+        where f.type = 'theory-pref' and f.response is not null and t.active = 1
         order by t.seniority_rank ASC
         `;
     const teacherResponseResults = (await client.query(teacherResponses)).rows;
@@ -375,6 +383,22 @@ export async function getSessionalAssignment() {
   const result = (await client.query(query)).rows;
   client.release();
   return result;
+}
+
+export async function saveReorderedTeacherPreferenceDB(initial, response) {
+  const client = await connect();
+  try {
+    const query = `
+      UPDATE forms 
+      SET response = $1 
+      WHERE initial = $2 AND type = 'theory-pref'
+    `;
+    
+    const result = await client.query(query, [JSON.stringify(response), initial]);
+    return result.rowCount > 0;
+  } finally {
+    client.release();
+  }
 }
 
 export async function setTeacherAssignmentDB(assignment) {
