@@ -18,7 +18,8 @@ import {
   setTeacherAssignmentDB,
   setTeacherSessionalAssignmentDB,
   getTeacherMailByInitial,
-  getFormIdByInitialAndType
+  getFormIdByInitialAndType,
+  saveReorderedTeacherPreferenceDB
 } from "./repository.js";
 import { HttpError } from "../config/error-handle.js";
 
@@ -222,6 +223,22 @@ export async function setTeacherAssignment(req, res, next){
     res.status(200).json({message: "Assignment Successful"});
   } catch (error) {
     res.status(500).json({message: "An error occurred in server"});
+  }
+}
+
+export async function saveReorderedTeacherPreference(req, res, next) {
+  try {
+    const { initial, response } = req.body;
+    const success = await saveReorderedTeacherPreferenceDB(initial, response);
+    if (!success) {
+      throw new HttpError(404, "Teacher preference not found");
+    }
+    res.status(200).json({ 
+      success: true, 
+      message: "Preferences updated successfully" 
+    });
+  } catch (error) {
+    next(error);
   }
 }
 
