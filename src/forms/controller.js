@@ -1,41 +1,50 @@
 import { sendTheorySchedNextMail } from "../schedule/controller.js";
 import {
-  getTheoryPreferenceFormByUUID,
-  getForms,
-  updateForm,
-  getTheoryScheduleFormByUUID,
+  getPreferenceForm,
+  updatePreferenceForm,
+  getTheoryScheduleForm,
   saveTheoryScheduleForm,
-  getSessionalPreferenceFormByUUID,
 } from "./repository.js";
 
-export async function getTheoryPreferenceForm(req, res, next) {
-  const uuid = req.params["uuid"];
-
+export async function getTheoryPreferenceFormAPI(req, res, next) {
+  const initial = req.params["initial"];
   try {
-    const form = await getTheoryPreferenceFormByUUID(uuid);
-
+    console.log("Fetching theory preference form for initial:", initial);
+    const form = await getPreferenceForm(initial, "theory-pref");
     res.status(200).json({ data: form });
   } catch (err) {
     next(err);
   }
 }
 
-export async function getTheoryScheduleForm(req, res, next) {
-  const uuid = req.params["uuid"];
+export async function updateTheoryPreferenceFormAPI(req, res, next) {
+  const initial = req.params["initial"];
+  let response = JSON.stringify(req.body.preferences);
+
   try {
-    const form = await getTheoryScheduleFormByUUID(uuid);
+    const form = await updatePreferenceForm(initial, response, "theory-pref");
+    res.status(200).json({ msg: "Successfully Updated" });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getTheoryScheduleFormAPI(req, res, next) {
+  const initial = req.params["initial"];
+  try {
+    const form = await getTheoryScheduleForm(initial);
     res.status(200).json(form);
   } catch (err) {
     next(err);
   }
 }
 
-export async function saveTheoryScheduleFormAPI(req, res, next) {
+export async function updateTheoryScheduleFormAPI(req, res, next) {
   try {
-    const uuid = req.params["uuid"];
-    const response = req.body;
-    await updateForm(uuid, JSON.stringify(response), "theory-sched");
-    const batch = await saveTheoryScheduleForm(uuid, response);
+    const initial = req.params["initial"];
+    const response = JSON.stringify(req.body);
+    await updatePreferenceForm(initial, response, "theory-sched");
+    const batch = await saveTheoryScheduleForm(initial, response);
     await sendTheorySchedNextMail(batch);
     res.status(200).json({ msg: "Successfully Updated" });
   } catch (err) {
@@ -43,47 +52,22 @@ export async function saveTheoryScheduleFormAPI(req, res, next) {
   }
 }
 
-export async function getAllForm(req, res, next) {
-  try {
-    const form = await getForms();
+export async function getSessionalPreferenceFormAPI(req, res, next) {
+  const initial = req.params["initial"];
 
+  try {
+    const form = await getPreferenceForm(initial, "sessional-pref");
     res.status(200).json({ data: form });
   } catch (err) {
     next(err);
   }
 }
 
-export async function editForm(req, res, next) {
-  const uuid = req.params["uuid"];
-  let response = req.body.preferences;
-  //make response a string
-  response = JSON.stringify(response);
-
+export async function updateSessionalPreferenceFormAPI(req, res, next) {
   try {
-    const form = await updateForm(uuid, response);
-
-    res.status(200).json({ msg: "Successfully Updated" });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function getSessionalPreferenceForm(req, res, next) {
-  const uuid = req.params["uuid"];
-
-  try {
-    const form = await getSessionalPreferenceFormByUUID(uuid);
-    res.status(200).json({ data: form });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function saveSessionalPreferenceFormAPI(req, res, next) {
-  try {
-    const uuid = req.params["uuid"];
-    const response = req.body;
-    await updateForm(uuid, JSON.stringify(response), "sessional-pref");
+    const initial = req.params["initial"];
+    const response = JSON.stringify(req.body);
+    await updatePreferenceForm(initial, response, "sessional-pref");
     res.status(200).json({ msg: "Successfully Updated" });
   } catch (err) {
     next(err);

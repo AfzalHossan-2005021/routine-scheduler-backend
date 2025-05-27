@@ -1,27 +1,22 @@
 import express from "express";
 import {
-  getTheoryPreferenceForm,
-  getAllForm,
-  editForm,
-  getTheoryScheduleForm,
-  saveTheoryScheduleFormAPI,
-  saveSessionalPreferenceFormAPI,
-  getSessionalPreferenceForm,
+  getTheoryPreferenceFormAPI,
+  updateTheoryPreferenceFormAPI,
+  getTheoryScheduleFormAPI,
+  updateTheoryScheduleFormAPI,
+  updateSessionalPreferenceFormAPI,
+  getSessionalPreferenceFormAPI,
 } from "./controller.js";
 
 const router = express.Router();
 
-// theory/pref/{form_id} get
+router.get("/theory-pref/:initial", getTheoryPreferenceFormAPI);
+router.put("/theory-pref/:initial", updateTheoryPreferenceFormAPI);
 
-// TODO: WHY OPEN? TYPE WHERE?
-router.get("/", getAllForm);
-router.get("/:uuid", getTheoryPreferenceForm);
-router.put("/:uuid", editForm);
+router.get("/theory-sched/:initial", getTheoryScheduleFormAPI);
+router.put("/theory-sched/:initial", updateTheoryScheduleFormAPI);
 
-router.get("/theory-sched/:uuid", getTheoryScheduleForm);
-router.put("/theory-sched/:uuid", saveTheoryScheduleFormAPI);
-
-router.get("/sessional-pref/:uuid", getSessionalPreferenceForm);
-router.put("/sessional-pref/:uuid", saveSessionalPreferenceFormAPI);
+router.get("/sessional-pref/:initial", getSessionalPreferenceFormAPI);
+router.put("/sessional-pref/:initial", updateSessionalPreferenceFormAPI);
 
 export default router;

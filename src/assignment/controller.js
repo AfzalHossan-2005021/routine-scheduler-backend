@@ -23,9 +23,9 @@ import {
 } from "./repository.js";
 import { HttpError } from "../config/error-handle.js";
 
-async function sendMail(initial, email, template, token) {
+async function sendMail(initial, email, template) {
   var url = process.env.URL || "http://localhost:3000";
-  url = url + "/form/theory-pref/" + token;
+  url = url + "/form/theory-pref/" + initial;
   const msg =
     "<p>" + template + "</p>" +
     "<h2> For " + initial + ":</h2><br>" + " <h1>Please fill up this form</h1>  <a href=' " +
@@ -133,9 +133,9 @@ export async function setLabRoomAssignemnt(req, res, next) {
   }
 }
 
-async function sendSessionalMail(initial, email, template, token) {
+async function sendSessionalMail(initial, email, template) {
   var url = process.env.URL || "http://localhost:3000";
-  url = url + "/form/sessional-pref/" + token;
+  url = url + "/form/sessional-pref/" + initial;
   const msg =
     "<p>" + template + "</p>" +
     "<h2> For " + initial + ":</h2><br>" + " <h1>Please fill up this form</h1>  <a href=' " +
@@ -256,13 +256,13 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export async function resendFormMailHandler({ initial, email, token, type }) {
+export async function resendFormMailHandler({ initial, email, type }) {
   try {
     // Use sendMail for theory-pref, sendSessionalMail for sessional-pref
     if (type === 'theory-pref') {
-      return await sendMail(initial, email, (await getTemplate('THEORY_EMAIL'))[0].value, token);
+      return await sendMail(initial, email, (await getTemplate('THEORY_EMAIL'))[0].value);
     } else if (type === 'sessional-pref') {
-      return await sendSessionalMail(initial, email, (await getTemplate('SESSIONAL_EMAIL'))[0].value, token);
+      return await sendSessionalMail(initial, email, (await getTemplate('SESSIONAL_EMAIL'))[0].value);
     } else {
       throw new HttpError(400, 'Invalid form type');
     }
@@ -275,9 +275,8 @@ export async function resendTheoryPrefMail(req, res, next) {
   try {
     const initial = req.params["initial"];
     const email = await getTeacherMailByInitial(initial);
-    const token = await getFormIdByInitialAndType(initial, 'theory-pref');
     console.log(`Resending theory preference mail to ${initial}.`);
-    await resendFormMailHandler({ initial, email, token, type: 'theory-pref' });
+    await resendFormMailHandler({ initial, email, type: 'theory-pref' });
     res.status(200).json({ msg: 'Theory preference mail resent successfully' });
   } catch (err) {
     next(err);
@@ -288,8 +287,7 @@ export async function resendSessionalPrefMail(req, res, next) {
   try {
     const initial = req.params["initial"];
     const email = await getTeacherMailByInitial(initial);
-    const token = await getFormIdByInitialAndType(initial, 'sessional-pref');
-    await resendFormMailHandler({ initial, email, token, type: 'sessional-pref' });
+    await resendFormMailHandler({ initial, email, type: 'sessional-pref' });
     res.status(200).json({ msg: 'Sessional preference mail resent successfully' });
   } catch (err) {
     next(err);
