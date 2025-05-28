@@ -84,7 +84,7 @@ export async function setSessionalScheduleAPI(req, res, next) {
   }
 }
 
-export async function sendTheorySchedNextMail(batch) {
+export async function sendTheorySchedNextMail(batch, next) {
   try {
     const msgBody = await getTemplate("SCHEDULE_EMAIL");
     if (msgBody[0].key === null || msgBody[0].key === undefined) {
@@ -112,7 +112,7 @@ export async function initiate(req, res, next) {
   }
 
   for (const batch of batches) {
-    await sendTheorySchedNextMail(batch);
+    await sendTheorySchedNextMail(batch, next);
   }
 
   res.status(200).json({ msg: "successfully send" });
