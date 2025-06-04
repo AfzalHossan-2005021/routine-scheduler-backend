@@ -415,21 +415,34 @@ export async function saveReorderedTeacherPreferenceDB(initial, response) {
 }
 
 export async function setTeacherAssignmentDB(assignment) {
-  if(assignment.initial === "None"){
-    return;
-  }
-  // const query = `
-  //   INSERT INTO teacher_assignment (course_id, initial, session) VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'))
-  // `;
-  const query = `
-    UPDATE teacher_assignment
-    SET initial = $1
-    WHERE course_id = $2 AND initial = $3 and session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
-  `;
-  const values = [assignment.initial, assignment.course_id, assignment.old_initial];
   const client = await connect();
   try {
-    await client.query(query, values);
+    if ((assignment.initial === "None" || assignment.initial === null) && (assignment.old_initial === "None" || assignment.old_initial === null)) {
+      return;
+    }
+    if(assignment.initial === "None" || assignment.initial === undefined || assignment.initial === null){
+      const deleteQuery = `
+        DELETE FROM teacher_assignment
+        WHERE course_id = $1 AND initial = $2 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+      `;
+      const deleteValues = [assignment.course_id, assignment.old_initial];
+      await client.query(deleteQuery, deleteValues);
+    } else if( assignment.old_initial === "None" || assignment.old_initial === undefined || assignment.old_initial === null){
+      const insertQuery = `
+        INSERT INTO teacher_assignment (course_id, initial, session)
+        VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'))
+      `;
+      const insertValues = [assignment.course_id, assignment.initial];
+      await client.query(insertQuery, insertValues);
+    } else {
+      const updateQuery = `
+      UPDATE teacher_assignment
+      SET initial = $1
+      WHERE course_id = $2 AND initial = $3 and session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+      `;
+      const updateValues = [assignment.initial, assignment.course_id, assignment.old_initial];
+      await client.query(updateQuery, updateValues);
+    }
   } catch (error) {
     await client.query("ROLLBACK");
     console.log(error);
