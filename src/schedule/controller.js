@@ -11,6 +11,7 @@ import {
   getAllScheduleDB,
   roomContradictionDB,
   teacherContradictionDB,
+  ensureScheduleEmailTemplateExists,
 } from "./repository.js";
 import { createForm, getTemplate } from "../assignment/repository.js";
 import { HttpError } from "../config/error-handle.js";
@@ -86,36 +87,81 @@ export async function setSessionalScheduleAPI(req, res, next) {
 
 export async function sendTheorySchedNextMail(batch, next) {
   try {
+    // First ensure the template exists
+    await ensureScheduleEmailTemplateExists();
+    
+    // Now get the template
     const msgBody = await getTemplate("SCHEDULE_EMAIL");
-    if (msgBody[0].key === null || msgBody[0].key === undefined) {
+    if (msgBody && msgBody.length > 0 && msgBody[0].value) {
       const teachers = await nextInSeniority();
       for (const teacher of teachers.filter((t) => t.batch === batch)) {
         const id = teacher.id;
-        await sendMail(teacher.initial, teacher.email, `Theory Schedule Form: ${id}`, id);
+        await sendMail(teacher.initial, teacher.email, msgBody[0].value, id);
         console.log(teacher);
       } 
     } else {
-      next(new HttpError(400, "Template not found"));
+      // Handle case where the template exists but has no value
+      const error = new HttpError(400, "Template not found or empty");
+      if (next) next(error);
+      else throw error;
     }
   } catch (err) {
-    next(err);
+    console.error("Error in sendTheorySchedNextMail:", err);
+    if (next) next(err);
+    else throw err;
   }
 }
 
 export async function initiate(req, res, next) {
-  const teachers = await getTheoryScheduleTeachers();
-  const batches = new Set();
-  for (const teacher of teachers) {
-    teacher.id = uuidv4();
-    await createForm(teacher.id, teacher.initial, "theory-sched");
-    batches.add(teacher.batch);
-  }
+  try {
+    // First, ensure the email template exists
+    await ensureScheduleEmailTemplateExists();
+    
+    // Get the list of teachers
+    const teachers = await getTheoryScheduleTeachers();
+    
+    if (!teachers || teachers.length === 0) {
+      return res.status(200).json({ msg: "No teachers found to send emails to" });
+    }
+    
+    const batches = new Set();
+    
+    // Create forms for each teacher
+    for (const teacher of teachers) {
+      teacher.id = uuidv4();
+      await createForm(teacher.id, teacher.initial, "theory-sched");
+      batches.add(teacher.batch);
+    }
 
-  for (const batch of batches) {
-    await sendTheorySchedNextMail(batch, next);
-  }
+    // Process all batches without passing next to sendTheorySchedNextMail
+    // This prevents early response sending
+    let errors = [];
+    for (const batch of batches) {
+      try {
+        await sendTheorySchedNextMail(batch);
+      } catch (error) {
+        // Collect errors but continue processing other batches
+        console.error(`Error sending mails for batch ${batch}:`, error);
+        errors.push({ batch, error: error.message });
+      }
+    }
 
-  res.status(200).json({ msg: "successfully send" });
+    // Send response with any errors that occurred
+    if (errors.length > 0) {
+      res.status(207).json({ 
+        msg: "Some emails were sent successfully, but there were errors", 
+        errors: errors 
+      });
+    } else {
+      res.status(200).json({ msg: "successfully sent" });
+    }
+  } catch (error) {
+    console.error("Error in initiate:", error);
+    // Avoid sending headers if they've already been sent
+    if (!res.headersSent) {
+      next(error);
+    }
+  }
 }
 
 export async function getCurrStatus(req, res, next) {

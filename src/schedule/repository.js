@@ -85,7 +85,7 @@ export async function setSessionalSchedule(batch, section, department, schedule)
 
 export async function getTheoryScheduleForms() {
   const query = `
-    SELECT response, teachers.initial, teachers.name, teachers.email
+    SELECT response, teachers.initial, teachers.name, teachers.email, teachers.seniority_rank
     FROM forms
     INNER JOIN teachers ON forms.initial = teachers.initial
     WHERE type = 'theory-sched'
@@ -171,4 +171,34 @@ export async function teacherContradictionDB(batch, section, course_id) {
   }
   client.release();
   return results;
+}
+
+export async function ensureScheduleEmailTemplateExists() {
+  const client = await connect();
+  
+  try {
+    // Check if the template exists
+    const checkQuery = "SELECT * FROM configs WHERE key='SCHEDULE_EMAIL'";
+    const checkResult = await client.query(checkQuery);
+    
+    // If the template doesn't exist or has no value, create it
+    if (checkResult.rows.length === 0) {
+      const insertQuery = "INSERT INTO configs (key, value) VALUES ('SCHEDULE_EMAIL', 'Please fill out your theory schedule preferences. Click the link below to access the form.')";
+      await client.query(insertQuery);
+      console.log("Created SCHEDULE_EMAIL template");
+      return true;
+    } else if (!checkResult.rows[0].value) {
+      const updateQuery = "UPDATE configs SET value='Please fill out your theory schedule preferences. Click the link below to access the form.' WHERE key='SCHEDULE_EMAIL'";
+      await client.query(updateQuery);
+      console.log("Updated SCHEDULE_EMAIL template");
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error("Error ensuring schedule email template exists:", error);
+    throw error;
+  } finally {
+    client.release();
+  }
 }

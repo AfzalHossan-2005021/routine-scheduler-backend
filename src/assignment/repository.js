@@ -64,7 +64,7 @@ export async function createForm(id, initial, type) {
 
 export async function getTheoryPreferencesStatus() {
   const query = `
-    SELECT response, teachers.initial, teachers.name, teachers.email
+    SELECT response, teachers.initial, teachers.name, teachers.email, teachers.seniority_rank
     FROM forms
     INNER JOIN teachers ON forms.initial = teachers.initial
     WHERE type = 'theory-pref'
@@ -80,6 +80,7 @@ export async function getTheoryPreferencesStatus() {
         initial: row.initial,
         name: row.name,
         email: row.email,
+        seniority_rank: row.seniority_rank,
       };
     });
 
@@ -216,7 +217,7 @@ export async function setLabRoomAssignemntDB(assignment) {
 
 export async function getSessionalPreferencesStatus() {
   const query = `
-    SELECT response, teachers.initial, teachers.name, teachers.email
+    SELECT response, teachers.initial, teachers.name, teachers.email, teachers.seniority_rank
     FROM forms
     INNER JOIN teachers ON forms.initial = teachers.initial
     WHERE type = 'sessional-pref'
@@ -232,6 +233,7 @@ export async function getSessionalPreferencesStatus() {
         initial: row.initial,
         name: row.name,
         email: row.email,
+        seniority_rank: row.seniority_rank,
       };
     });
 

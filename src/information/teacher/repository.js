@@ -2,7 +2,7 @@ import { connect } from "../../config/database.js";
 import { HttpError } from "../../config/error-handle.js";
 
 export async function getAll() {
-  const query = "SELECT * FROM teachers";
+  const query = "SELECT * FROM teachers ORDER BY seniority_rank ASC";
   const client = await connect();
   const results = await client.query(query);
   client.release();
