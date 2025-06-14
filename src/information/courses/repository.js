@@ -157,12 +157,13 @@ export async function removeCourse(course_id) {
 }
 
 export async function getAllLab() {
-  const query =
-    "SELECT cs.course_id, cs.section, cs.batch , c.name, s.level_term, s.department \
-    FROM courses_sections cs\
-    JOIN courses c ON cs.course_id = c.course_id\
-    join sections s using (batch, section, department)\
-    WHERE cs.course_id LIKE 'CSE%' and c.type=1";
+  const query =`
+    SELECT cs.course_id, cs.section, cs.batch , c.name, s.level_term, s.department
+    FROM courses_sections cs
+    JOIN courses c ON cs.course_id = c.course_id
+    join sections s using (batch, section, department)
+    WHERE cs.course_id LIKE 'CSE%' and c.type=1
+    ORDER BY cs.course_id, cs.section`;
   const client = await connect();
   const results = await client.query(query);
   client.release();

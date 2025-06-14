@@ -19,7 +19,6 @@ async function getCourses(type) {
     const results = await client.query(query, values);
     client.release();
     return results.rows;
-  } else if (type == "theory-sched") {
   } else if (type == "sessional-pref") {
     const query = `SELECT course_id, name
         FROM courses
@@ -51,8 +50,8 @@ export async function getPreferenceForm(initial, type) {
     throw new HttpError(404, "Form not found");
   }
   
-  let courses = await getCourses(type); // Use the input type parameter instead
-  courses = courses.filter((course) => course.course_id.startsWith("CSE"));
+  const allCourses = await getCourses(type);
+  const courses = allCourses.filter((course) => course.course_id.startsWith("CSE"));
   const data = {
     teacher: results.rows[0],
     courses: courses,
@@ -76,11 +75,10 @@ export async function getTheoryScheduleForm(initial) {
     ) sections
     from forms f natural join teacher_assignment ta join courses co using (course_id, "session")
     where f.initial = $1 and f.type = 'theory-sched'
-    `;
-  const values = [initial];
+  `;
 
   const client = await connect();
-  const results = await client.query(query, values);
+  const results = await client.query(query, [initial]);
   client.release();
 
   if (results.rows.length <= 0) {
@@ -91,43 +89,52 @@ export async function getTheoryScheduleForm(initial) {
 }
 
 export async function saveTheoryScheduleForm(initial, response) {
-  const query = `select ta.course_id, (select cs.batch from courses_sections cs where cs.course_id = ta.course_id and cs."session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION') limit 1) from forms f natural join teacher_assignment ta where f.initial = $1 and f.type = 'theory-sched'`;
-  const client = await connect();
-  const results = await client.query(query, [initial]);
-  const course_id = results.rows[0].course_id;
-  const query2 = `
-    SELECT "to"
-    FROM courses
-    WHERE course_id = $1
+  const query = `
+    SELECT 
+      ta.course_id,
+      courses.to as dept,
+      cs.batch
+    FROM
+      teacher_assignment ta
+      NATURAL JOIN courses
+      JOIN courses_sections cs 
+        ON cs.course_id = ta.course_id 
+        AND cs.session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    WHERE 
+      ta.initaial = $1
+    LIMIT 1
   `;
-  let dept = await client.query(query2, [course_id]);
-  dept = dept.rows[0].to;
-  response.forEach((row) => {
-    const query = `insert into schedule_assignment values ($1, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`;
+  const client = await connect();
+  let results = await client.query(query, [initial]);
+  const {course_id, dept, batch} = results.rows[0];
+
+  let schedulePref = JSON.parse(response);
+  
+  schedulePref.forEach((row) => {
+    const query = `
+      INSERT INTO schedule_assignment (course_id, session, batch, section, day, time, department) 
+      VALUES ($1, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $2, $3, $4, $5, $6) 
+      ON CONFLICT DO NOTHING
+    `;
     const values = [course_id, row.batch, row.section, row.day, row.time, dept];
     client.query(query, values);
   });
   client.release();
-  return results.rows[0].batch;
+  return batch;
 }
 
-export async function updatePreferenceForm(initial, response, type) {
+export async function updateForm(initial, response, type) {
   const client = await connect();
 
   const query = `
     UPDATE forms
-    SET
-      response = $2
-    WHERE forms.initial = $1 AND forms.type = $3 AND forms.response IS NULL
+    SET response = $2
+    WHERE forms.initial = $1 AND forms.type = $3
   `;
   let values = [initial, response, type];
 
   const results = await client.query(query, values);
   client.release();
 
-  if (results.rowCount <= 0) {
-    throw new HttpError(400, "Insertion Failed");
-  } else {
-    return results.rowCount;
-  }
+  return results.rowCount;
 }

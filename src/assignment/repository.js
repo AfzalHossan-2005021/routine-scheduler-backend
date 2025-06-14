@@ -74,9 +74,28 @@ export async function getTheoryPreferencesStatus() {
   try {
     const results = await client.query(query);
     const cleanResult = results.rows.map((row) => {
-      //console.log(row)
+      let parsedResponse = null;
+      if (row.response) {
+        try {
+          parsedResponse = JSON.parse(row.response);
+        } catch (error) {          
+          // Try to handle comma-separated string format: "CSE103","CSE109","CSE101"
+          try {
+            // Remove quotes and split by comma, then trim each item
+            const commaSeparated = row.response.replace(/"/g, '').split(',').map(item => item.trim());
+            if (commaSeparated.length > 0 && commaSeparated[0] !== '') {
+              parsedResponse = commaSeparated;
+            } else {
+              parsedResponse = null;
+            }
+          } catch (fallbackError) {
+            console.error(`Fallback parsing also failed for teacher ${row.initial}:`, fallbackError.message);
+            parsedResponse = null;
+          }
+        }
+      }
       return {
-        response: row.response && JSON.parse(row.response),
+        response: parsedResponse,
         initial: row.initial,
         name: row.name,
         email: row.email,
@@ -131,7 +150,28 @@ export async function finalize() {
     console.log(teacherResponseResults, noOfTeachersResults);
     
     for (const row of teacherResponseResults) {
-      const courses = JSON.parse(row.response);
+      let courses = [];
+      try {
+        courses = JSON.parse(row.response);
+      } catch (error) {
+        console.error(`Failed to parse JSON response for teacher ${row.initial}:`, error.message);
+        console.error(`Invalid JSON content: ${row.response}`);
+        
+        // Try to handle comma-separated string format: "CSE103","CSE109","CSE101"
+        try {
+          // Remove quotes and split by comma, then trim each item
+          const commaSeparated = row.response.replace(/"/g, '').split(',').map(item => item.trim());
+          if (commaSeparated.length > 0 && commaSeparated[0] !== '') {
+            courses = commaSeparated;
+            console.log(`Successfully parsed comma-separated format for teacher ${row.initial}:`, courses);
+          } else {
+            continue; // Skip this teacher's record
+          }
+        } catch (fallbackError) {
+          console.error(`Fallback parsing also failed for teacher ${row.initial}:`, fallbackError.message);
+          continue; // Skip this teacher's record
+        }
+      }
       const initial = row.initial;
       let theoryCourses = row.theory_courses;
       console.log(initial, theoryCourses);
@@ -141,6 +181,19 @@ export async function finalize() {
           noOfTeachersResults[course_id] === undefined ||
           noOfTeachersResults[course_id] > 0
         ) {
+          // Check if the course exists in the courses table for current session
+          const checkQuery = `
+                    SELECT 1 FROM courses 
+                    WHERE course_id = $1 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+                    `;
+          const checkResult = await client.query(checkQuery, [course_id]);
+          
+          // Skip if course doesn't exist in current session
+          if (checkResult.rows.length === 0) {
+            console.log(`Skipping course ${course_id} for teacher ${initial} - not found in courses for current session`);
+            continue;
+          }
+          
           const query = `
                     INSERT INTO teacher_assignment (initial, course_id, session)
                     VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'))
@@ -191,8 +244,10 @@ export async function getTeacherAssignmentDB() {
 }
 
 export async function getLabRoomAssignmentDB() {
-  const query = `SELECT course_id, "session", batch, "section", room
-  FROM lab_room_assignment;
+  const query = `
+    SELECT course_id, "session", batch, "section", room
+    FROM lab_room_assignment
+    ORDER BY course_id, "section";
   `;
   const client = await connect();
   const result = (await client.query(query)).rows;
@@ -228,8 +283,32 @@ export async function getSessionalPreferencesStatus() {
     const results = await client.query(query);
     const cleanResult = results.rows.map((row) => {
       //console.log(row)
+      let parsedResponse = null;
+      if (row.response) {
+        try {
+          parsedResponse = JSON.parse(row.response);
+        } catch (error) {
+          console.error(`Failed to parse JSON response for teacher ${row.initial}:`, error.message);
+          console.error(`Invalid JSON content: ${row.response}`);
+          
+          // Try to handle comma-separated string format: "CSE103","CSE109","CSE101"
+          try {
+            // Remove quotes and split by comma, then trim each item
+            const commaSeparated = row.response.replace(/"/g, '').split(',').map(item => item.trim());
+            if (commaSeparated.length > 0 && commaSeparated[0] !== '') {
+              parsedResponse = commaSeparated;
+              console.log(`Successfully parsed comma-separated format for teacher ${row.initial}:`, parsedResponse);
+            } else {
+              parsedResponse = null;
+            }
+          } catch (fallbackError) {
+            console.error(`Fallback parsing also failed for teacher ${row.initial}:`, fallbackError.message);
+            parsedResponse = null;
+          }
+        }
+      }
       return {
-        response: row.response && JSON.parse(row.response),
+        response: parsedResponse,
         initial: row.initial,
         name: row.name,
         email: row.email,
@@ -291,17 +370,48 @@ export async function finalizeSessional() {
       const initial = row.initial;
       teachersSet.add(initial);
       teachers.push(initial);
-      const courses = JSON.parse(row.response)
-        .map((course_id) =>
-          teacherPerCourse
-            .map((no) =>
-              coursePerTheorySection[course_id].sections
-                .map((section) => `${course_id} ${section} ${no}`)
-                .flat()
-            )
-            .flat()
-        )
-        .flat();
+      let courses = [];
+      try {
+        courses = JSON.parse(row.response)
+          .map((course_id) =>
+            teacherPerCourse
+              .map((no) =>
+                coursePerTheorySection[course_id].sections
+                  .map((section) => `${course_id} ${section} ${no}`)
+                  .flat()
+              )
+              .flat()
+          )
+          .flat();
+      } catch (error) {
+        console.error(`Failed to parse JSON response for teacher ${row.initial}:`, error.message);
+        console.error(`Invalid JSON content: ${row.response}`);
+        
+        // Try to handle comma-separated string format: "CSE103","CSE109","CSE101"
+        try {
+          // Remove quotes and split by comma, then trim each item
+          const commaSeparated = row.response.replace(/"/g, '').split(',').map(item => item.trim());
+          if (commaSeparated.length > 0 && commaSeparated[0] !== '') {
+            courses = commaSeparated
+              .map((course_id) =>
+                teacherPerCourse
+                  .map((no) =>
+                    coursePerTheorySection[course_id].sections
+                      .map((section) => `${course_id} ${section} ${no}`)
+                      .flat()
+                  )
+                  .flat()
+              )
+              .flat();
+            console.log(`Successfully parsed comma-separated format for teacher ${row.initial}:`, commaSeparated);
+          } else {
+            courses = []; // Set empty array on parse error
+          }
+        } catch (fallbackError) {
+          console.error(`Fallback parsing also failed for teacher ${row.initial}:`, fallbackError.message);
+          courses = []; // Set empty array on parse error
+        }
+      }
       rankSubjects.push(courses);
     });
 

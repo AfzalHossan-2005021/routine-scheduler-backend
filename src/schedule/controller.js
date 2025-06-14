@@ -11,7 +11,7 @@ import {
   getAllScheduleDB,
   roomContradictionDB,
   teacherContradictionDB,
-  ensureScheduleEmailTemplateExists,
+  ensureEmailTemplateExists,
 } from "./repository.js";
 import { createForm, getTemplate } from "../assignment/repository.js";
 import { HttpError } from "../config/error-handle.js";
@@ -88,16 +88,14 @@ export async function setSessionalScheduleAPI(req, res, next) {
 export async function sendTheorySchedNextMail(batch, next) {
   try {
     // First ensure the template exists
-    await ensureScheduleEmailTemplateExists();
+    await ensureEmailTemplateExists("SCHEDULE_EMAIL");
     
     // Now get the template
     const msgBody = await getTemplate("SCHEDULE_EMAIL");
     if (msgBody && msgBody.length > 0 && msgBody[0].value) {
       const teachers = await nextInSeniority();
       for (const teacher of teachers.filter((t) => t.batch === batch)) {
-        const id = teacher.id;
-        await sendMail(teacher.initial, teacher.email, msgBody[0].value, id);
-        console.log(teacher);
+        await sendMail(teacher.initial, teacher.email, msgBody[0].value, teacher.id);
       } 
     } else {
       // Handle case where the template exists but has no value
@@ -113,23 +111,20 @@ export async function sendTheorySchedNextMail(batch, next) {
 }
 
 export async function initiate(req, res, next) {
-  try {
-    // First, ensure the email template exists
-    await ensureScheduleEmailTemplateExists();
-    
+  try {    
     // Get the list of teachers
     const teachers = await getTheoryScheduleTeachers();
     
     if (!teachers || teachers.length === 0) {
-      return res.status(200).json({ msg: "No teachers found to send emails to" });
+      return res.status(200).json({ msg: "No teachers found to send email" });
     }
     
     const batches = new Set();
     
     // Create forms for each teacher
     for (const teacher of teachers) {
-      teacher.id = uuidv4();
-      await createForm(teacher.id, teacher.initial, "theory-sched");
+      const id = uuidv4();
+      await createForm(id, teacher.initial, "theory-sched");
       batches.add(teacher.batch);
     }
 

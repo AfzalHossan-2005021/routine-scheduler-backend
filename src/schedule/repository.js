@@ -173,28 +173,46 @@ export async function teacherContradictionDB(batch, section, course_id) {
   return results;
 }
 
-export async function ensureScheduleEmailTemplateExists() {
+export async function ensureEmailTemplateExists(type) {
   const client = await connect();
   
   try {
     // Check if the template exists
-    const checkQuery = "SELECT * FROM configs WHERE key='SCHEDULE_EMAIL'";
+    const checkQuery = "SELECT * FROM configs WHERE key= $1";
     const checkResult = await client.query(checkQuery);
     
     // If the template doesn't exist or has no value, create it
     if (checkResult.rows.length === 0) {
-      const insertQuery = "INSERT INTO configs (key, value) VALUES ('SCHEDULE_EMAIL', 'Please fill out your theory schedule preferences. Click the link below to access the form.')";
-      await client.query(insertQuery);
-      console.log("Created SCHEDULE_EMAIL template");
+      if(type == "SCHEDULE_EMAIL") {
+        const insertQuery = "INSERT INTO configs (key, value) VALUES ('SCHEDULE_EMAIL', 'Please fill out your theory schedule preferences. Click the link below to access the form.')";
+        await client.query(insertQuery);
+      } else if (type == "THEORY_EMAIL") {
+        const insertQuery = "INSERT INTO configs (key, value) VALUES ('THEORY_EMAIL', 'Please fill out your theory course preferences. Click the link below to access the form.')";
+        await client.query(insertQuery);
+      } else if (type == "SESSIONAL_EMAIL") {
+        const insertQuery = "INSERT INTO configs (key, value) VALUES ('SESSIONAL_EMAIL', 'Please fill out your sessional course preferences. Click the link below to access the form.')";
+        await client.query(insertQuery);
+      } else {
+        return false;
+      }
       return true;
     } else if (!checkResult.rows[0].value) {
-      const updateQuery = "UPDATE configs SET value='Please fill out your theory schedule preferences. Click the link below to access the form.' WHERE key='SCHEDULE_EMAIL'";
-      await client.query(updateQuery);
-      console.log("Updated SCHEDULE_EMAIL template");
+      if(type == "SCHEDULE_EMAIL") {
+        const updateQuery = "UPDATE configs SET value = 'Please fill out your theory schedule preferences. Click the link below to access the form.' WHERE key = 'SCHEDULE_EMAIL'";
+        await client.query(updateQuery);
+      } else if (type == "THEORY_EMAIL") {
+        const updateQuery = "UPDATE configs SET value = 'Please fill out your theory course preferences. Click the link below to access the form.' WHERE key = 'THEORY_EMAIL'";
+        await client.query(updateQuery);
+      } else if (type == "SESSIONAL_EMAIL") {
+        const updateQuery = "UPDATE configs SET value = 'Please fill out your sessional course preferences. Click the link below to access the form.' WHERE key = 'SESSIONAL_EMAIL'";
+        await client.query(updateQuery);
+      } else {
+        return false;
+      }
+      return true;
+    } else {
       return true;
     }
-    
-    return false;
   } catch (error) {
     console.error("Error ensuring schedule email template exists:", error);
     throw error;
