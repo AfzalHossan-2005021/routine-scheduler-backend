@@ -1,12 +1,38 @@
 import { connect } from "../config/database.js";
 
 export async function getTheorySchedule(batch, section) {
-  const query = `select course_id, "day" , "time", department  from schedule_assignment sa natural join courses c where batch = $1 and "section" = $2 and type = 0 and "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
-  const values = [batch, section];
+  // This query gets schedules for both the main section and any subsections
+  const query = `
+    SELECT course_id, c.type, "day", "time", department, "section"
+    FROM schedule_assignment sa
+    NATURAL JOIN courses c
+    WHERE batch = $1 AND ("section" = $2 OR "section" LIKE $3)
+    AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    ORDER BY "section"
+  `;
+  const values = [batch, section, `${section}%`];
   const client = await connect();
   const results = await client.query(query, values);
   client.release();
-  return results.rows;
+  
+  // Organize results with subsections grouped under their main section
+  const mainSectionSchedules = results.rows.filter(row => row.section === section);
+  const subsectionSchedules = {};
+  
+  // Group subsection schedules
+  results.rows.forEach(row => {
+    if (row.section !== section) {
+      if (!subsectionSchedules[row.section]) {
+        subsectionSchedules[row.section] = [];
+      }
+      subsectionSchedules[row.section].push(row);
+    }
+  });
+  
+  return {
+    mainSection: mainSectionSchedules,
+    subsections: subsectionSchedules
+  };
 }
 
 export async function setTheorySchedule(batch, section, course, schedule) {
@@ -44,7 +70,13 @@ export async function setTheorySchedule(batch, section, course, schedule) {
 }
 
 export async function getSessionalSchedule(batch, section) {
-  const query = `select course_id, "day" , "time", department  from schedule_assignment sa natural join courses c where batch = $1 and "section" = $2 and type = 1 and "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
+  const query = `
+    SELECT course_id, "day", "time", department, "section"
+    FROM schedule_assignment sa
+    NATURAL JOIN courses c
+    WHERE batch = $1 AND "section" = $2 AND type = 1
+    AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+  `;
   const values = [batch, section];
   const client = await connect();
   const results = await client.query(query, values);
