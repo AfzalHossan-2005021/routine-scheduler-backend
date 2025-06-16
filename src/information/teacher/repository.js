@@ -19,7 +19,7 @@ export async function findByInitial(initial) {
   if (results.rows.length <= 0) {
     throw new HttpError(404, "Not Found");
   } else {
-    return results.rows;
+    return results.rows[0];
   }
 }
 
