@@ -10,6 +10,23 @@ export async function getAll() {
   return results.rows;
 }
 
+export async function getSessionalSectionsByDeptLevelTerm(department, level_term) {
+  const query = `
+    SELECT section
+    FROM sections
+    WHERE department = $1
+    AND level_term = $2
+    AND type = 1
+    ORDER BY section
+  `;
+  const values = [department, level_term];
+
+  const client = await connect();
+  const results = await client.query(query, values);
+  client.release();
+  return results.rows;
+}
+
 export async function saveSection(sections) {
   const batch = sections.batch;
   const section = sections.section;
