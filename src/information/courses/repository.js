@@ -182,3 +182,19 @@ export async function getNonDeptLabs() {
   client.release();
   return results.rows;
 }
+
+export async function getSessionalCoursesByDeptLevelTerm(department, level_term) {
+  const query = `
+    SELECT course_id, name, class_per_week
+    FROM all_courses
+    WHERE type = 1
+    AND all_courses.to = $1
+    AND level_term = $2
+    ORDER BY course_id
+    `;
+  const values = [department, level_term];
+  const client = await connect();
+  const results = await client.query(query, values);
+  client.release();
+  return results.rows;
+}

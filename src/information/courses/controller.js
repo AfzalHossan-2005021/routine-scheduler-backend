@@ -4,7 +4,8 @@ import {
   updateCourse,
   removeCourse,
   getAllLab,
-  getNonDeptLabs
+  getNonDeptLabs,
+  getSessionalCoursesByDeptLevelTerm
 } from "./repository.js";
 
 export async function getAllCourse(req, res, next) {
@@ -112,6 +113,18 @@ export async function getNonDeptLabCourses(req, res, next) {
   try {
     const Courses = await getNonDeptLabs();
     res.status(200).json(Courses);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getSessionalCoursesByDeptLevelTermAPI(req, res, next) {
+  const department = req.params["department"];
+  const level_term = req.params["level_term"];
+
+  try {
+    const Courses = await getSessionalCoursesByDeptLevelTerm(department, level_term);
+    res.status(200).json({ message: "Sessional courses successfully Fetched", data: Courses });
   } catch (err) {
     next(err);
   }
