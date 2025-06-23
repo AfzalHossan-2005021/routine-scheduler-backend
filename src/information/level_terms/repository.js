@@ -26,10 +26,37 @@ export async function getAll(){
     `;
     const client = await connect();
     const result = await client.query(query);
-    const level_terms = result.rows;
-    // console.log(level_terms);
     client.release();
+    const level_terms = result.rows;
     return level_terms;
+}
+
+export async function getAllActiveDepartments(){
+    const query = `
+        SELECT DISTINCT department
+        FROM level_term_unique
+        WHERE active = true;
+    `;
+    const client = await connect();
+    const result = await client.query(query);
+    client.release();
+    const departments = result.rows.map(row => row.department);
+    return departments;
+}
+
+export async function getDepartmentalLevelTermBatches(department) {
+    const query = `
+        SELECT DISTINCT level_term, batch
+        FROM level_term_unique
+        WHERE department = $1
+        AND active = true
+        ORDER BY level_term;
+    `;
+    const client = await connect();
+    const result = await client.query(query, [department]);
+    client.release();
+    const levelTermBatches = result.rows;
+    return levelTermBatches;
 }
 
 export async function updateLevelTerms(levelTerms) {
