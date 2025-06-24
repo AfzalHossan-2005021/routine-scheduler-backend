@@ -9,8 +9,12 @@ import {
   getLabRoomAssignment,
   setLabRoomAssignemnt,
   getTeacherAssignment,
+  getTeacherTheoryAssigmentsAPI,
   sendSessionalPrefMail,
   getSessionalCurrStatus,
+  getTeacherSessionalAssignmentAPI,
+  getSessionalTeachersAPI,
+  getAllSessionalAssignmentAPI,
   finalizeSessionalPreference,
   setTeacherAssignment,
   setTeacherSessionalAssignment,
@@ -28,11 +32,15 @@ router.post("/theory/save-preference", saveReorderedTeacherPreference);
 
 router.get("/sessional/initiate", sendSessionalPrefMail);
 router.get("/sessional/status", getSessionalCurrStatus);
+router.get("/sessional/all", getAllSessionalAssignmentAPI);
+router.get("/sessional/teachers/:course_id/:section", getSessionalTeachersAPI);
 router.get("/sessional/resend/:initial", resendSessionalPrefMail);
 router.get("/sessional/finalize", finalizeSessionalPreference);
+router.get("/sessional/:initial", getTeacherSessionalAssignmentAPI);
 router.put("/sessional/set", setTeacherSessionalAssignment);
 
 router.get("/theory/all", getTeacherAssignment);
+router.get("/theory/:initial", getTeacherTheoryAssigmentsAPI);
 
 router.get("/room/status", getLabRoomAssignment);
 router.post("/room/assign", setLabRoomAssignemnt);

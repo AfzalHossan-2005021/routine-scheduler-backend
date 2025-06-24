@@ -243,6 +243,19 @@ export async function getTeacherAssignmentDB() {
   return result;
 }
 
+export async function getTeacherTheoryAssigments(initial) {
+  const query = `
+    SELECT course_id
+    FROM teacher_assignment
+    WHERE initial = $1
+    AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+  `;
+  const client = await connect();
+  const result = await client.query(query, [initial]);
+  client.release();
+  return result.rows;
+}
+
 export async function getLabRoomAssignmentDB() {
   const query = `
     SELECT course_id, "session", batch, "section", room
@@ -320,6 +333,49 @@ export async function getSessionalPreferencesStatus() {
   } finally {
     client.release();
   }
+}
+
+export async function getTeacherSessionalAssignment(initial) {
+  const query = `
+    SELECT course_id, batch, "section"
+    FROM teacher_sessional_assignment
+    WHERE initial = $1
+    AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+  `;
+  const client = await connect();
+  const result = await client.query(query, [initial]);
+  client.release();
+  return result.rows;
+}
+
+export async function getSessionalTeachers(course_id, section) {
+  const query = `
+    SELECT tsa.initial
+    FROM teacher_sessional_assignment tsa
+    INNER JOIN teachers t ON tsa.initial = t.initial
+    WHERE course_id = $1
+    AND "section" = $2
+    AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    ORDER BY t.seniority_rank ASC
+  `;
+  const values = [course_id, section];
+  const client = await connect();
+  const result = await client.query(query, values);
+  client.release();
+  return result.rows;
+}
+
+export async function getAllSessionalAssignment() {
+  const query = `
+    SELECT course_id, batch, "section", initial
+    FROM teacher_sessional_assignment
+    WHERE "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    ORDER BY course_id, "section", initial
+  `;
+  const client = await connect();
+  const result = await client.query(query);
+  client.release();
+  return result.rows;
 }
 
 export async function isSessionalFinalized() {
@@ -568,33 +624,16 @@ export async function setTeacherSessionalAssignmentDB(assignment){
   if(assignment.initial === "None"){
     return;
   }
-  // const query = `
-  //   INSERT INTO teacher_assignment (course_id, initial, session) VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'))
-  // `;
   const query = `
-    UPDATE teacher_sessional_assignment
-    SET initial = $1
-    WHERE course_id = $2 AND initial = $3 AND section = $4 and batch = $5 and session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    INSERT INTO teacher_sessional_assignment (initial, course_id, session, batch, section)
+    VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4)
   `;
-  
-  const query2 = `
-    select ltu.batch
-    from courses c 
-    join level_term_unique ltu 
-    on c.level_term = ltu.level_term and c."to" = ltu.department
-    where c.course_id = $1
-  `;
-  const values2 = [assignment.course_id];
+  const values = [assignment.initial, assignment.course_id, assignment.batch, assignment.section];
   const client = await connect();
-  const batch = (await client.query(query2, values2)).rows[0].batch;
-  
-  const values = [assignment.initial, assignment.course_id, assignment.old_initial, assignment.section, batch];
   try {
-    await client.query(query, values);
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.log(error);
-    throw error;
+    const result = await client.query(query, values);
+    if (result.rowCount <= 0) throw new HttpError(400, "Insertion Failed");
+    return result.rows;
   } finally {
     client.release();
   }
