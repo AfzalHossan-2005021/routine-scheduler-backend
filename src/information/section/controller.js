@@ -3,7 +3,8 @@ import {
   saveSection,
   updateSection,
   removeSection,
-  getSessionalSectionsByDeptLevelTerm
+  getSessionalSectionsByDeptLevelTerm,
+  getTheorySectionsByDeptAndLevelTerm
 } from "./repository.js";
 
 export async function getAllSection(req, res, next) {
@@ -21,6 +22,17 @@ export async function getSessionalSectionsByDeptLevelTermAPI(req, res, next) {
   try {
     const sections = await getSessionalSectionsByDeptLevelTerm(department, level_term);
     res.status(200).json({message: "Sessional sections retrieved successfully", data: sections});
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getTheorySectionsByDeptLevelTermAPI(req, res, next) {
+  const department = req.params["department"];
+  const level_term = req.params["level_term"];
+  try {
+    const sections = await getTheorySectionsByDeptAndLevelTerm(department, level_term);
+    res.status(200).json({message: "Theory sections retrieved successfully", data: sections});
   } catch (err) {
     next(err);
   }
