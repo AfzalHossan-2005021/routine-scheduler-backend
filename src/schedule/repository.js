@@ -160,6 +160,21 @@ export async function getAllScheduleDB() {
   return results;
 }
 
+export async function getDepartmentalSessionalSchedule(){
+  const query = `
+    SELECT course_id, batch, "section", "day", "time"
+    FROM schedule_assignment
+    WHERE course_id LIKe 'CSE%'
+    AND LENGTH("section") = 2
+    AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    ORDER BY course_id, "section"
+  `;
+  const client = await connect();
+  const results = await client.query(query);
+  client.release();
+  return results.rows;
+}
+
 export async function roomContradictionDB(batch, section, course_id) {
   const roomQuery = `
   select room from lab_room_assignment lra where batch = $1 and "section" = $2 and course_id = $3 and session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
@@ -251,4 +266,31 @@ export async function ensureEmailTemplateExists(type) {
   } finally {
     client.release();
   }
+}
+
+export async function getCourseAllSchedule(course_id) {
+  const query = `
+    SELECT course_id, "day", "time"
+    FROM schedule_assignment
+    WHERE course_id = $1
+    AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+  `;
+  const client = await connect();
+  const results = await client.query(query, [course_id]);
+  client.release();
+  return results.rows;
+}
+
+export async function getCourseSectionalSchedule(course_id, section) {
+  const query = `
+    SELECT course_id, section, "day", "time"
+    FROM schedule_assignment
+    WHERE course_id = $1 
+    AND "section" = $2
+    AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+  `;
+  const client = await connect();
+  const results = await client.query(query, [course_id, section]);
+  client.release();
+  return results.rows;
 }
