@@ -132,7 +132,7 @@ async function initializeSectionsTable(levelTerms, session){
             for(let i = 0; i < parseInt(levelTerm.section_count); i++){
                 const section = String.fromCharCode(65 + i);
                 const query = `
-                    INSERT INTO sections (batch, section, "type", session, level_term, department) VALUES ($1, $2, $3,$4, $5, $6);
+                    INSERT INTO sections (batch, section, "type", session, level_term, department) VALUES ($1, $2, $3,$4, $5, $6) ON CONFLICT (batch, section) DO NOTHING;
                 `;
                 const values = [parseInt(levelTerm.batch), section, 0, session, levelTerm.level_term, levelTerm.department];
                 const values1 = [parseInt(levelTerm.batch), `${section}1`, 1, session, levelTerm.level_term, levelTerm.department];

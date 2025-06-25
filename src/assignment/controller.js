@@ -11,14 +11,17 @@ import {
   getLabRoomAssignmentDB,
   setLabRoomAssignemntDB,
   getTeacherAssignmentDB,
+  getTeacherTheoryAssigments,
   getSessionalPreferencesStatus,
   finalizeSessional,
   isSessionalFinalized,
   getSessionalAssignment,
+  getTeacherSessionalAssignment,
+  getSessionalTeachers,
+  getAllSessionalAssignment,
   setTeacherAssignmentDB,
   setTeacherSessionalAssignmentDB,
   getTeacherMailByInitial,
-  getFormIdByInitialAndType,
   saveReorderedTeacherPreferenceDB
 } from "./repository.js";
 import { HttpError } from "../config/error-handle.js";
@@ -114,6 +117,36 @@ export async function getTeacherAssignment(req, res, next) {
   }
 }
 
+export async function getTeacherTheoryAssigmentsAPI(req, res, next) {
+  try {
+    const initial = req.params["initial"];
+    const result = await getTeacherTheoryAssigments(initial);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getSessionalTeachersAPI(req, res, next) {
+  const course_id = req.params["course_id"];
+  const section = req.params["section"];
+  try {
+    const result = await getSessionalTeachers(course_id, section);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getAllSessionalAssignmentAPI(req, res, next) {
+  try {
+    const result = await getAllSessionalAssignment();
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function getLabRoomAssignment(req, res, next) {
   try {
     const result = await getLabRoomAssignmentDB();
@@ -177,6 +210,7 @@ export async function sendSessionalPrefMail(req, res, next) {
 }
 
 export async function getSessionalCurrStatus(req, res, next) {
+  console.log("Fetching sessional preferences status...");
   try {
     const result = await getSessionalPreferencesStatus();
     if (result.length === 0) {
@@ -198,6 +232,16 @@ export async function getSessionalCurrStatus(req, res, next) {
           submitted: otherResponse,
         });
     }
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getTeacherSessionalAssignmentAPI(req, res, next) {
+  try {
+    const initial = req.params["initial"];
+    const result = await getTeacherSessionalAssignment(initial);
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }
@@ -275,7 +319,6 @@ export async function resendTheoryPrefMail(req, res, next) {
   try {
     const initial = req.params["initial"];
     const email = await getTeacherMailByInitial(initial);
-    console.log(`Resending theory preference mail to ${initial}.`);
     await resendFormMailHandler({ initial, email, type: 'theory-pref' });
     res.status(200).json({ msg: 'Theory preference mail resent successfully' });
   } catch (err) {

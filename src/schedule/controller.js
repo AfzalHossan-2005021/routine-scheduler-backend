@@ -7,8 +7,11 @@ import {
   getTheoryScheduleTeachers,
   nextInSeniority,
   getSessionalSchedule,
+  getDepartmentalSessionalSchedule,
   setSessionalSchedule,
   getAllScheduleDB,
+  getCourseAllSchedule,
+  getCourseSectionalSchedule,
   roomContradictionDB,
   teacherContradictionDB,
   ensureEmailTemplateExists,
@@ -66,6 +69,15 @@ export async function getSessionalScheduleAPI(req, res, next) {
     let { batch, section } = req.params;
     batch = parseInt(batch);
     const result = await getSessionalSchedule(batch, section);
+    res.status(200).json(result);
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function getDepartmentalSessionalScheduleAPI(req, res, next) {
+  try {
+    const result = await getDepartmentalSessionalSchedule();
     res.status(200).json(result);
   } catch (e) {
     next(e);
@@ -200,6 +212,28 @@ export async function getAllSchedule(req, res, next) {
     next(err);
   }
 }
+
+export async function getCourseAllScheduleAPI(req, res, next) {
+  try {
+    const { course_id } = req.params;
+    const result = await getCourseAllSchedule(course_id);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getCourseSectionalScheduleAPI(req, res, next) {
+  try {
+    const { course_id, section } = req.params;
+    const result = await getCourseSectionalSchedule(course_id, section);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+
 
 export async function roomContradiction(req, res, next) {
   try {
