@@ -154,6 +154,64 @@ async function createPDFStd(datas, filename) {
 	return (await pdf.create(document, options)).filename;
 }
 
+// PDF diagnostic and error handling utility
+async function handlePdfError(err, outputDir, next) {
+	console.error("PDF Generation Error:", err);
+
+	// Check for common errors
+	if (err.code === "ENOENT" && err.syscall?.includes("phantomjs")) {
+		console.error("[PDF ERROR] PhantomJS executable not found");
+		console.error("Expected path:", err.path);
+		console.error("Make sure PhantomJS is installed and available in PATH");
+
+		// Try to provide helpful information about available executables
+		try {
+			const { execSync } = require("child_process");
+			const findResult = execSync(
+				"find / -name phantomjs -type f 2>/dev/null || echo 'Not found'"
+			).toString();
+			console.error("PhantomJS executables found on system:", findResult || "None");
+		} catch (e) {
+			console.error("Could not search for PhantomJS executables");
+		}
+	} else if (err.code === "ENOENT" && err.syscall?.includes("access")) {
+		console.error("[PDF ERROR] PDF file not found:", err.path);
+
+		// Check if directory exists
+		try {
+			const fs = require("fs");
+			const path = require("path");
+			const dirPath = path.dirname(err.path);
+			const dirExists = fs.existsSync(dirPath);
+			console.error("Directory exists:", dirExists);
+			if (dirExists) {
+				const files = fs.readdirSync(dirPath);
+				console.error("Files in directory:", files);
+			}
+		} catch (e) {
+			console.error("Could not check directory:", e.message);
+		}
+	}
+
+	// Check if we need to create the directory
+	if (outputDir) {
+		try {
+			const fs = require("fs");
+			const path = require("path");
+			const dirPath = path.dirname(outputDir);
+			if (!fs.existsSync(dirPath)) {
+				fs.mkdirSync(dirPath, { recursive: true });
+				console.log("Created missing directory:", dirPath);
+			}
+		} catch (e) {
+			console.error("Failed to create directory:", e.message);
+		}
+	}
+
+	// Pass error to express error handler
+	next(err);
+}
+
 export async function generatePDF(req, res, next) {
 	const lvlTerm = req.params.lvlTerm;
 
@@ -180,7 +238,7 @@ export async function generatePDF(req, res, next) {
 			res.status(200).json({ message: "PDF generated" });
 		}
 	} catch (err) {
-		next(err);
+		handlePdfError(err, null, next);
 	}
 }
 
@@ -210,7 +268,7 @@ export async function teacherPDF(req, res, next) {
 			res.status(200).json({ message: "PDF generated" });
 		}
 	} catch (err) {
-		next(err);
+		handlePdfError(err, null, next);
 	}
 }
 
@@ -237,7 +295,7 @@ export async function roomPDF(req, res, next) {
 			res.status(200).json({ message: "PDF generated" });
 		}
 	} catch (err) {
-		next(err);
+		handlePdfError(err, null, next);
 	}
 }
 
