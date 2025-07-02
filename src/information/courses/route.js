@@ -3,7 +3,7 @@ import express from 'express'
 
 const router = express.Router();
 
-import {  getAllCourse , addCourse , editCourse, deleteCourse, getLabCourses, getNonDeptLabCourses, getSessionalCoursesByDeptLevelTermAPI } from './controller.js';
+import {  getAllCourse , addCourse , editCourse, deleteCourse, getLabCourses, getNonDeptLabCourses, getSessionalCoursesByDeptLevelTermAPI,getTheoryCoursesByDeptLevelTermAPI,getNonDeptTheoryCourses } from './controller.js';
 import validate from "../../config/validation.js";
 import {body} from 'express-validator'
 
@@ -18,5 +18,7 @@ router.get("/labs",getLabCourses)
 router.get("/labs/non_dept", getNonDeptLabCourses)
 router.get("/labs/:department/:level_term", getSessionalCoursesByDeptLevelTermAPI)
 
+router.get("/theory/:department/:level_term", getTheoryCoursesByDeptLevelTermAPI)
+router.get("/theory/non_dept", getNonDeptTheoryCourses)
 
 export default router;
