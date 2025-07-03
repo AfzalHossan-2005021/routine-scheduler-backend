@@ -112,31 +112,55 @@ export async function getSessionalSchedule(batch, section) {
 }
 
 export async function setSessionalSchedule(batch, section, department, schedule) {
-  const query = `INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department) VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6)`;
-  const removeCourses = `DELETE FROM schedule_assignment WHERE batch = $1 and "section" = $2 AND department = $3 AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
-
+  console.log(batch, section, department, schedule);
   const client = await connect();
   try {
     await client.query("BEGIN");
-
-    await client.query(removeCourses, [batch, section, department]);
-    for (const slot of schedule) {
-      const getQuery2 = `
-        SELECT "to"
-        FROM courses
-        WHERE course_id = $1
+    const course_id_query = `
+      SELECT course_id
+      FROM schedule_assignment
+      WHERE batch = $1
+      AND "section" = $2 
+      AND department = $3
+      AND "day" = $4
+      AND "time" = $5
+    `;
+    const db_courses = (await client.query(course_id_query, [batch, section, department, schedule.day, schedule.time])).rows;
+    if(db_courses.length === 0) {
+      const insert_query = `
+        INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department)
+        VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6)
       `;
-      let dept = await client.query(getQuery2, [slot.course_id])
-      dept = dept.rows[0].to;
-      const values = [batch, section, slot.course_id, slot.day, slot.time, dept];
-      await client.query(query, values);
+      await client.query(insert_query, [batch, section, schedule.course_id, schedule.day, schedule.time, department]);
+    } else {
+      if(schedule.course_id === "None") {
+        const delete_query = `
+          DELETE FROM schedule_assignment
+          WHERE batch = $1
+          AND "section" = $2
+          AND department = $3
+          AND "day" = $4
+          AND "time" = $5
+        `;
+        await client.query(delete_query, [batch, section, department, schedule.day, schedule.time]);
+      } else {
+        const update_query = `
+          UPDATE schedule_assignment
+          SET course_id = $1
+          WHERE batch = $2
+          AND "section" = $3
+          AND department = $4
+          AND "day" = $5
+          AND "time" = $6
+        `;
+        await client.query(update_query, [schedule.course_id, batch, section, department, schedule.day, schedule.time]);
+      }
     }
     await client.query("COMMIT");
     return true;
   } catch (e) {
-    console.log(e);
     await client.query("ROLLBACK");
-    return false;
+    throw e;
   } finally {
     client.release();
   }
