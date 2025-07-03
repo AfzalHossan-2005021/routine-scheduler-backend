@@ -32,7 +32,6 @@ fi
 
 # Create a test file to verify write access
 echo -e "\n${BLUE}[3/6]${NC} Verifying write access..."
-echo "Test file $(date)" > /app/src/pdfgenerator/test.txt
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Successfully wrote test file${NC}"
 else
