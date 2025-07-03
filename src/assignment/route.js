@@ -5,6 +5,7 @@ const router = express.Router();
 import {
   sendTheoryPrefMail,
   getCurrStatus,
+  setCurrStatus,
   finalizeTheoryPreference,
   getLabRoomAssignment,
   setLabRoomAssignemnt,
@@ -25,6 +26,7 @@ import {
 
 router.get("/theory/initiate", sendTheoryPrefMail);
 router.get("/theory/status", getCurrStatus);
+router.put("/theory/status", setCurrStatus);
 router.get("/theory/resend/:initial", resendTheoryPrefMail);
 router.get("/theory/finalize", finalizeTheoryPreference);
 router.put("/theory/set", setTeacherAssignment);

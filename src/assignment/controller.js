@@ -5,6 +5,8 @@ import {
   getAllTeacherMail,
   createForm,
   getTheoryPreferencesStatus,
+  getTheoryAssignStatus,
+  setTheoryAssignStatus,
   finalize,
   isFinalized,
   getTheoryAssignment,
@@ -72,24 +74,35 @@ export async function sendTheoryPrefMail(req, res, next) {
 export async function getCurrStatus(req, res, next) {
   try {
     const result = await getTheoryPreferencesStatus();
-    if (result.length === 0) {
+    const status = await getTheoryAssignStatus();
+    if (status === 0) {
       res.status(200).json({ status: 0 });
     } else {
       const nullResponse = result.filter((row) => row.response === null);
       const otherResponse = result.filter((row) => row.response !== null);
-      if (await isFinalized())
-        res.status(200).json({
-          status: 3,
-          values: nullResponse,
-          submitted: otherResponse,
-          assignment: await getTheoryAssignment(),
-        });
-      else
-        res.status(200).json({
-          status: nullResponse.length === 0 ? 2 : 1,
-          values: nullResponse,
-          submitted: otherResponse,
-        });
+      res.status(200).json({
+        status: status,
+        values: nullResponse,
+        submitted: otherResponse,
+        assignment: await getTheoryAssignment(),
+      });
+    }
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function setCurrStatus(req, res, next) {
+  try {
+    const { status } = req.body;
+    if (status < 0 || status > 3) {
+      throw new HttpError(400, "Invalid status value");
+    }
+    const result = await setTheoryAssignStatus(status);
+    if (result) {
+      res.status(200).json({ msg: "Status updated successfully" });
+    } else {
+      throw new HttpError(500, "Failed to update status");
     }
   } catch (err) {
     next(err);
