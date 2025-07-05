@@ -109,6 +109,41 @@ export async function getTheoryPreferencesStatus() {
   }
 }
 
+export async function getTheoryAssignStatus() {
+  const query = `
+    SELECT value
+    FROM configs
+    WHERE key = 'THEORY_PREF_STATUS'
+    `;
+
+  const client = await connect();
+  try {
+    const results = await client.query(query);
+    if (results.rows.length <= 0) throw new HttpError(404, "Status not found");
+    return results.rows[0].value;
+  } finally {
+    client.release();
+  }
+}
+
+export async function setTheoryAssignStatus(status) {
+  const query = `
+    INSERT INTO configs (key, value)
+    VALUES ('THEORY_PREF_STATUS', $1)
+    ON CONFLICT (key) DO UPDATE SET value = $1
+  `;
+  const values = [status];
+
+  const client = await connect();
+  try {
+    const results = await client.query(query, values);
+    if (results.rowCount <= 0) throw new HttpError(400, "Insertion Failed");
+    return results.rows;
+  } finally {
+    client.release();
+  }
+}
+
 export async function isFinalized() {
   const query = `SELECT COUNT(*) FROM teacher_assignment WHERE "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
   //const query2 = `SELECT COUNT(*) FROM teachers where active = 1`;
