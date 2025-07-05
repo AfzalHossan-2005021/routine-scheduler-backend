@@ -3,8 +3,6 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import path from "path";
-import admin from "firebase-admin";
-import { serviceAccount } from "../../pvtkey.js";
 import {
 	routineForLvl,
 	routineForTeacher,
@@ -442,67 +440,9 @@ export async function roomPDF(req, res, next) {
 	}
 }
 
-//initialize the app
-try {
-	admin.initializeApp({
-		credential: admin.credential.cert(
-			JSON.parse(JSON.stringify(serviceAccount))
-		),
-		storageBucket: "gs://buet-cse-routine-scheduler.appspot.com", //you can find in storage.
-	});
-	console.log("Firebase Admin initialized successfully.");
-} catch (err) {
-	console.log(err);
-}
+// Firebase functionality removed
 
-//get bucket
-var bucket = admin.storage().bucket();
-
-//function to upload file
-async function uploadFile(filepath, filename) {
-	await bucket.upload(filepath, {
-		gzip: true,
-		destination: filename,
-		metadata: {
-			cacheControl: "public, max-age=31536000",
-		},
-	});
-
-	console.log(`${filename} uploaded to bucket.`);
-}
-
-//function to get url
-
-async function generateSignedUrl(filename) {
-	const options = {
-		version: "v2",
-		action: "read",
-		expires: Date.now() + 1000 * 60 * 60,
-	};
-
-	const [url] = await bucket.file(filename).getSignedUrl(options);
-	// console.log(url);
-	return url;
-}
-
-// var filepath = outputDir;
-var filename = "test.pdf"; //can be anything, it will be the name with which it will be uploded to the firebase storage.
-
-export async function uploadPDF(req, res) {
-	// uploadFile(filepath, filename)
-	const url = await generateSignedUrl(filename);
-	res.status(200).json({ url: url });
-}
-
-async function uploadRoutine(filepath, filename) {
-	await bucket.upload(filepath, {
-		gzip: true,
-		destination: filename,
-		metadata: {
-			cacheControl: "public, max-age=31536000",
-		},
-	});
-}
+// Firebase upload functionality removed
 
 export async function serveLvlTermPDF(req, res, next) {
 	const lvlTerm = req.params.lvlTerm;

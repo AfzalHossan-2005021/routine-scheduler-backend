@@ -1,5 +1,5 @@
 import express from "express";
-import { generatePDF, uploadPDF,teacherPDF,roomPDF,serveLvlTermPDF,getAllInitial,serveTeacherPDF,serveRoomPDF,getAllIRooms, getAllLevelTerm, generateAllLevelTermPDFs, generateAllTeacherPDFs, generateAllRoomPDFs, serveAllLevelTermsPDF, serveAllTeachersPDF, serveAllRoomsPDF} from "./controller.js";
+import { generatePDF, teacherPDF, roomPDF, serveLvlTermPDF, getAllInitial, serveTeacherPDF, serveRoomPDF, getAllIRooms, getAllLevelTerm, generateAllLevelTermPDFs, generateAllTeacherPDFs, generateAllRoomPDFs, serveAllLevelTermsPDF, serveAllTeachersPDF, serveAllRoomsPDF} from "./controller.js";
 
 const router = express.Router();
 
@@ -9,7 +9,6 @@ router.get("/generateRoom/:room", roomPDF);
 router.get("/generateAllLevelTerms", generateAllLevelTermPDFs);
 router.get("/generateAllTeachers", generateAllTeacherPDFs);
 router.get("/generateAllRooms", generateAllRoomPDFs);
-router.get("/upload", uploadPDF);
 
 
 router.get("/showTerm/:lvlTerm/:section",serveLvlTermPDF);

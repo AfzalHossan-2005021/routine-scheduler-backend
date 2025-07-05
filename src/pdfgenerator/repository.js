@@ -1,4 +1,3 @@
-import { async } from "@firebase/util";
 import { connect } from "../config/database.js";
 
 export async function routineForLvl(lvlTerm) {
