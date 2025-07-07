@@ -36,17 +36,17 @@ export async function getScheduleConfigs() {
   }
 }
 
-export async function getTheorySchedule(batch, section) {
+export async function getTheorySchedule(department, batch, section) {
   // This query gets schedules for both the main section and any subsections
   const query = `
     SELECT course_id, c.type, "day", "time", department, "section"
     FROM schedule_assignment sa
     NATURAL JOIN courses c
-    WHERE batch = $1 AND ("section" = $2 OR "section" LIKE $3)
+    WHERE department = $1 AND batch = $2 AND ("section" = $3 OR "section" LIKE $4)
     AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
     ORDER BY "section"
   `;
-  const values = [batch, section, `${section}%`];
+  const values = [department, batch, section, `${section}%`];
   const client = await connect();
   const results = await client.query(query, values);
   client.release();

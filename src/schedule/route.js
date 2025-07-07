@@ -17,7 +17,7 @@ import {
 
 const router = express.Router();
 
-router.get("/theory/:batch/:section", getTheoryScheduleAPI);
+router.get("/theory/:department/:batch/:section", getTheoryScheduleAPI);
 router.post("/theory/:batch/:section/:course", setTheoryScheduleAPI);
 
 router.get("/sessional/:batch/:section", getSessionalScheduleAPI);

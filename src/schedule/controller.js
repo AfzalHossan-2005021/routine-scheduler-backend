@@ -66,10 +66,10 @@ export async function setTheoryScheduleAPI(req, res, next) {
 
 export async function getTheoryScheduleAPI(req, res, next) {
   try {
-    let { batch, section } = req.params;
+    let { department, batch, section } = req.params;
     batch = parseInt(batch);
 
-    const result = await getTheorySchedule(batch, section);
+    const result = await getTheorySchedule(department, batch, section);
 
     res.status(200).json(result);
   } catch (e) {
