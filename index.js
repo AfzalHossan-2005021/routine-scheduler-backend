@@ -7,9 +7,15 @@ import route from './route.js';
 import errorHandler from './src/config/error-handle.js';
 
 import { connect } from "./src/config/database.js";
+import { initSystemConfigs } from './src/config/init-config.js';
 
 connect()
-  .then(() => console.log("Connected to the database ... "))
+  .then(() => {
+    console.log("Connected to the database ... ");
+    // Initialize system configurations
+    return initSystemConfigs();
+  })
+  .then(() => console.log("System configurations initialized..."))
   .catch((err) => console.log(err));
 
 const app = express();

@@ -1,5 +1,41 @@
 import { connect } from "../config/database.js";
 
+/**
+ * Get schedule configuration values (times, days, possibleLabTimes)
+ * @returns {Object} Schedule configuration values
+ */
+export async function getScheduleConfigs() {
+  const client = await connect();
+  try {
+    // Get all schedule-related config values
+    const query = `
+      SELECT key, value
+      FROM configs
+      WHERE key IN ('times', 'days', 'possibleLabTimes')
+    `;
+    const results = await client.query(query);
+    
+    // Process the results
+    const configs = {};
+    for (const row of results.rows) {
+      try {
+        configs[row.key] = JSON.parse(row.value);
+      } catch (e) {
+        configs[row.key] = row.value;
+      }
+    }
+    
+    // Set defaults if not found
+    if (!configs.times) configs.times = [8, 9, 10, 11, 12, 1, 2, 3, 4];
+    if (!configs.days) configs.days = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"];
+    if (!configs.possibleLabTimes) configs.possibleLabTimes = [8, 11, 2];
+    
+    return configs;
+  } finally {
+    client.release();
+  }
+}
+
 export async function getTheorySchedule(batch, section) {
   // This query gets schedules for both the main section and any subsections
   const query = `

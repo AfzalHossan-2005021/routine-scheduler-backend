@@ -4,6 +4,7 @@ import teacherRouter from "./src/information/teacher/route.js";
 import sectionRouter from "./src/information/section/route.js";
 import roomRouter from "./src/information/room/route.js";
 import courseRouter from "./src/information/courses/route.js";
+import configRouter from "./src/information/config/route.js";
 import formsRouter from "./src/forms/route.js";
 import assignRouter from "./src/assignment/route.js";
 import scheduleRouter from "./src/schedule/route.js";
@@ -22,6 +23,7 @@ router.use("/section", authorize(), sectionRouter);
 router.use("/room", authorize(), roomRouter);
 router.use("/assign", authorize(), assignRouter);
 router.use("/course", authorize(), courseRouter);
+router.use("/config", authorize(), configRouter);
 router.use("/schedule", authorize(), scheduleRouter);
 router.use("/level_terms", authorize(), levelTermRouter);
 

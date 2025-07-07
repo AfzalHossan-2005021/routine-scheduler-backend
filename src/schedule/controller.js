@@ -1,6 +1,7 @@
 import { resend } from "../config/mail.js";
 import { v4 as uuidv4 } from "uuid";
 import {
+  getScheduleConfigs,
   getTheorySchedule,
   setTheorySchedule,
   getTheoryScheduleForms,
@@ -18,6 +19,18 @@ import {
 } from "./repository.js";
 import { createForm, getTemplate } from "../assignment/repository.js";
 import { HttpError } from "../config/error-handle.js";
+
+/**
+ * Get schedule configuration values
+ */
+export async function getScheduleConfigValues(req, res, next) {
+  try {
+    const configs = await getScheduleConfigs();
+    res.json({ success: true, data: configs });
+  } catch (err) {
+    next(err);
+  }
+}
 
 async function sendMail(initial, email, template, token) {
   var url = process.env.URL || "http://localhost:3000";
