@@ -76,50 +76,30 @@ export async function setTheorySchedule(batch, section, course, schedule) {
   const client = await connect();
   try {
     await client.query("BEGIN");
+    const deleteQuery = `
+      DELETE FROM schedule_assignment
+      WHERE batch = $1
+      AND "section" = $2
+      AND "day" = $3
+      AND "time" = $4
+      AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
+    for (const slot of schedule) {
+      await client.query(deleteQuery, [batch, section, slot.day, slot.time]);
+    }
     if (course === "None" || course === "") {
-      // Delete all slots in schedule
-      const deleteQuery = `
-        DELETE FROM schedule_assignment
-        WHERE batch = $1
-        AND "section" = $2
-        AND "day" = $3
-        AND "time" = $4
-        AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
-      for (const slot of schedule) {
-        await client.query(deleteQuery, [batch, section, slot.day, slot.time]);
-      }
+      // Do nothing
     } else {
-      // Upsert each slot in schedule
+      // Insert each slot in schedule
       for (const slot of schedule) {
-        // Check if slot exists
-        const selectQuery = `
-          SELECT course_id FROM schedule_assignment
-          WHERE batch = $1 AND "section" = $2 AND "day" = $3 AND "time" = $4
-          AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+        // Insert new slot
+        const getDeptQuery = `SELECT "to" FROM courses WHERE course_id = $1`;
+        const deptResult = await client.query(getDeptQuery, [course]);
+        const department = deptResult.rows[0].to;
+        const insertQuery = `
+          INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department)
+          VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6)
         `;
-        const result = await client.query(selectQuery, [batch, section, slot.day, slot.time]);
-        if (result.rows.length > 0) {
-          // Update if course_id changed
-          if (result.rows[0].course_id !== course) {
-            const updateQuery = `
-              UPDATE schedule_assignment
-              SET course_id = $1
-              WHERE batch = $2 AND "section" = $3 AND "day" = $4 AND "time" = $5
-              AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
-            `;
-            await client.query(updateQuery, [course, batch, section, slot.day, slot.time]);
-          }
-        } else {
-          // Insert new slot
-          const getDeptQuery = `SELECT "to" FROM courses WHERE course_id = $1`;
-          const deptResult = await client.query(getDeptQuery, [course]);
-          const department = deptResult.rows[0].to;
-          const insertQuery = `
-            INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department)
-            VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6)
-          `;
-          await client.query(insertQuery, [batch, section, course, slot.day, slot.time, department]);
-        }
+        await client.query(insertQuery, [batch, section, course, slot.day, slot.time, department]);
       }
     }
     await client.query("COMMIT");
