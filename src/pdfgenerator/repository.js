@@ -131,10 +131,9 @@ export async function saveRoutine(type, key, url) {
 
 export async function getLevelTerms() {
     const query = `
-    SELECT DISTINCT l.level_term
-    FROM level_term_unique l
-    JOIN sections s ON l.level_term = s.level_term AND l.department = s.department
-    WHERE l.active = TRUE
+        SELECT DISTINCT level_term
+        FROM level_term_unique
+        WHERE active = TRUE
     `
     const client = await connect();
     const results = await client.query(query);

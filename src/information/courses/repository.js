@@ -50,7 +50,7 @@ export async function saveCourse(Course) {
   const level_term = Course.level_term;
 
   var query =
-    "INSERT INTO courses (course_id, name, type, session, class_per_week, from, to, teacher_credit, level_term) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9 )";
+    "INSERT INTO courses (course_id, name, type, session, class_per_week, 'from', to, teacher_credit, level_term) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9 )";
   var values = [course_id, name, type, session, class_per_week, from, to, teacher_credit, level_term];
 
   var client = await connect();
@@ -109,7 +109,7 @@ export async function updateCourse(Course) {
     type=$3, 
     session=$4, 
     class_per_week=$5,
-    from = $6,
+    'from' = $6,
     to = $7,
     teacher_credit = $8,
     level_term = $9
