@@ -10,7 +10,9 @@ import {
   deleteDefaultSectionCountDB,
   getBatchesDB,
   addBatchDB,
-  deleteBatchDB
+  deleteBatchDB,
+  getDepartmentsDB,
+  getLevelTermsDB
 } from './repository.js';
 
 export async function getSectionCountAPI(req, res, next) {
@@ -149,6 +151,26 @@ export async function deleteBatchAPI(req, res, next) {
     const result = await deleteBatchDB(batch);
     if (!result) throw new HttpError(400, "Delete Failed");
     res.status(200).json({ success: true });
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function getDepartmentsAPI(req, res, next) {
+  try {
+    const result = await getDepartmentsDB();
+    if (!result) throw new HttpError(404, "No departments found");
+    res.status(200).json(result);
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function getLevelTermsAPI(req, res, next) {
+  try {
+    const result = await getLevelTermsDB();
+    if (!result) throw new HttpError(404, "No level terms found");
+    res.status(200).json(result);
   } catch (e) {
     next(e);
   }

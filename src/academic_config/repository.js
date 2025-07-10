@@ -1,4 +1,3 @@
-import e from "express";
 import { connect } from "../config/database.js";
 
 export async function getSectionCountDB(batch, department) {
@@ -152,4 +151,43 @@ export async function deleteBatchDB(batch) {
     const result = await client.query(query, values);
     client.release();
     return result.rowCount > 0;
+}
+
+export async function getDepartmentsDB() {
+    const query = `
+        SELECT DISTINCT department
+        FROM section_count
+        ORDER BY department
+    `;
+
+    const client = await connect();
+    const result = await client.query(query);
+    client.release();
+    return result.rows.map(row => row.department);
+}
+
+export async function getLevelTermsDB() {
+    const level_query = `SELECT value FROM configs WHERE key = 'LEVEL_COUNT'`;
+    const term_query = `SELECT value FROM configs WHERE key = 'TERM_COUNT'`;
+
+    const client = await connect();
+    const levelResult = await client.query(level_query);
+
+    const termResult = await client.query(term_query);
+    client.release();
+    if (levelResult.rows.length === 0 || termResult.rows.length === 0)
+        throw new Error("Configuration for LEVEL_COUNT or TERM_COUNT not found");
+    const level = parseInt(levelResult.rows[0].value, 10);
+    const term = parseInt(termResult.rows[0].value, 10);
+    if (isNaN(level) || isNaN(term))
+        throw new Error("Invalid LEVEL_COUNT or TERM_COUNT value");
+
+    // create a 2D array to hold the level-term combinations
+    const result = [];
+    for (let i = 1; i <= level; i++) {
+        for (let j = 1; j <= term; j++) {
+            result.push(`L-${i} T-${j}`);
+        }
+    }
+    return result;
 }
