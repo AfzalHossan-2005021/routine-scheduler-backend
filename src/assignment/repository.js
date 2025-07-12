@@ -674,6 +674,22 @@ export async function setTeacherSessionalAssignmentDB(assignment){
   }
 }
 
+export async function deleteTeacherSessionalAssignmentDB(initial, course_id, batch, section){
+  const query = `
+    DELETE FROM teacher_sessional_assignment
+    WHERE initial = $1 AND course_id = $2 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION') AND batch = $3 AND section = $4
+  `;
+  const values = [initial, course_id, batch, section];
+  const client = await connect();
+  try {
+    const result = await client.query(query, values);
+    if (result.rowCount <= 0) throw new HttpError(400, "Deletion Failed");
+    return true;
+  } finally {
+    client.release();
+  }
+}
+
 export async function getFormIdByInitialAndType(initial, type) {
   const query = "SELECT id FROM forms WHERE initial = $1 AND type = $2";
   const values = [initial, type];

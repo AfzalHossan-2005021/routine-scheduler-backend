@@ -19,6 +19,7 @@ import {
   isSessionalFinalized,
   getSessionalAssignment,
   getTeacherSessionalAssignment,
+  deleteTeacherSessionalAssignmentDB,
   getSessionalTeachers,
   getAllSessionalAssignment,
   setTeacherAssignmentDB,
@@ -306,6 +307,22 @@ export async function setTeacherSessionalAssignment(req, res, next){
     res.status(200).json({message: "Assignment Successful"});
   } catch (error) {
     res.status(500).json({message: "An error occurred in server"});
+  }
+}
+
+export async function deleteTeacherSessionalAssignmentAPI(req, res, next) {
+  const { initial, course_id, batch, section } = req.body;
+  try {
+    const success = await deleteTeacherSessionalAssignmentDB(initial, course_id, batch, section);
+    if (!success) {
+      throw new HttpError(404, "Teacher sessional assignment not found");
+    }
+    res.status(200).json({ 
+      success: true, 
+      message: "Sessional assignment deleted successfully"
+    });
+  } catch (error) {
+    next(error);
   }
 }
 

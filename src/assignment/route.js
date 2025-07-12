@@ -19,6 +19,7 @@ import {
   finalizeSessionalPreference,
   setTeacherAssignment,
   setTeacherSessionalAssignment,
+  deleteTeacherSessionalAssignmentAPI,
   saveReorderedTeacherPreference,
   resendTheoryPrefMail,
   resendSessionalPrefMail
@@ -40,6 +41,7 @@ router.get("/sessional/resend/:initial", resendSessionalPrefMail);
 router.get("/sessional/finalize", finalizeSessionalPreference);
 router.get("/sessional/:initial", getTeacherSessionalAssignmentAPI);
 router.put("/sessional/set", setTeacherSessionalAssignment);
+router.delete("/sessional/delete", deleteTeacherSessionalAssignmentAPI);
 
 router.get("/theory/all", getTeacherAssignment);
 router.get("/theory/:initial", getTeacherTheoryAssigmentsAPI);
