@@ -8,7 +8,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libfreetype6 \
     libfontconfig1 \
-    fontconfig && \
+    fontconfig \
+    postgresql-client && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy package.json and package-lock.json to the working directory

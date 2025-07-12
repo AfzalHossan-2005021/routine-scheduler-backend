@@ -13,6 +13,7 @@ import pdfRouter from "./src/pdfgenerator/route.js";
 import levelTermRouter from './src/information/level_terms/route.js';
 import theoryRoomRouter from './src/theory_room_assignment/route.js';
 import AcademicConfig from './src/academic_config/route.js';
+import versionControlRouter from './src/version-control/route.js';
 
 import { authorize } from "./src/config/authorize.js";
 
@@ -29,6 +30,7 @@ router.use("/schedule", authorize(), scheduleRouter);
 router.use("/level_terms", authorize(), levelTermRouter);
 router.use("/theory_room_assignment", authorize(), theoryRoomRouter);
 router.use("/academic_config", authorize(), AcademicConfig);
+router.use("/versions", authorize(), versionControlRouter);
 
 
 router.use("/forms", formsRouter);
