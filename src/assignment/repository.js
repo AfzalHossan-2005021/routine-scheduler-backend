@@ -385,7 +385,7 @@ export async function getTeacherSessionalAssignment(initial) {
 
 export async function getSessionalTeachers(course_id, section) {
   const query = `
-    SELECT tsa.initial
+    SELECT t.initial, t.name, t.email, t.full_time_status, t.seniority_rank
     FROM teacher_sessional_assignment tsa
     INNER JOIN teachers t ON tsa.initial = t.initial
     WHERE course_id = $1
@@ -680,6 +680,7 @@ export async function deleteTeacherSessionalAssignmentDB(initial, course_id, bat
     WHERE initial = $1 AND course_id = $2 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION') AND batch = $3 AND section = $4
   `;
   const values = [initial, course_id, batch, section];
+  console.log(values);
   const client = await connect();
   try {
     const result = await client.query(query, values);
