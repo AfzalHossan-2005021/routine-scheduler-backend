@@ -3,11 +3,19 @@ import { HttpError } from "../../config/error-handle.js";
 
 export async function getAll() {
   try {
-    const query = `SELECT * FROM courses WHERE course_id != 'CT'`;
+    const query = `
+      SELECT * 
+      FROM courses
+      WHERE course_id != 'CT'
+      ORDER BY "to", level_term, course_id
+    `;
     const client = await connect();
     const courses = await client.query(query);
 
-    const query2 = "SELECT * FROM courses_sections";
+    const query2 = `
+      SELECT * 
+      FROM courses_sections
+    `;
 
     const courses_section = await client.query(query2);
     client.release();
@@ -40,34 +48,29 @@ export async function saveCourse(Course) {
   const course_id = Course.course_id;
   const name = Course.name;
   const type = Course.type;
-  const session = Course.session;
   const class_per_week = Course.class_per_week;
-  const batch = Course.batch;
-  const sections = Course.sections;
   const from = Course.from;
   const to = Course.to;
   const teacher_credit = Course.teacher_credit;
   const level_term = Course.level_term;
 
-  var query =
-    "INSERT INTO courses (course_id, name, type, session, class_per_week, 'from', to, teacher_credit, level_term) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9 )";
-  var values = [course_id, name, type, session, class_per_week, from, to, teacher_credit, level_term];
+  const query =`
+    INSERT INTO courses (course_id, name, type, session, class_per_week, \"from\", \"to\", teacher_credit, level_term)
+    VALUES ($1, $2, $3, (SELECT value from configs where key = 'CURRENT_SESSION'), $4, $5, $6, $7, $8)
+    ON CONFLICT (course_id, session) DO UPDATE
+    SET name = EXCLUDED.name,
+        type = EXCLUDED.type,
+        class_per_week = EXCLUDED.class_per_week,
+        "from" = EXCLUDED."from",
+        "to" = EXCLUDED."to",
+        teacher_credit = EXCLUDED.teacher_credit,
+        level_term = EXCLUDED.level_term
+  `;
+  const values = [course_id, name, type, class_per_week, from, to, teacher_credit, level_term];
 
-  var client = await connect();
+  const client = await connect();
   try {
-    var resultsIns = await client.query(query, values);
-
-    if (batch !== "") {
-      for (let section of sections) {
-        query =
-          "INSERT INTO courses_sections (course_id, session, batch, section, department) VALUES ($1, $2, $3, $4, $5 )";
-        values = [course_id, session, batch, section, to];
-        const results = await client.query(query, values);
-        if (results.rowCount <= 0) {
-          throw new HttpError(400, "Insertion Failed");
-        }
-      }
-    }
+    const resultsIns = await client.query(query, values);
 
     if (resultsIns.rowCount <= 0) {
       next(new Error("Insertion Failed"));
@@ -84,50 +87,21 @@ export async function updateCourse(Course) {
   const course_id = Course.course_id;
   const name = Course.name;
   const type = Course.type;
-  const session = Course.session;
   const class_per_week = Course.class_per_week;
-  const batch = Course.batch;
-  const sections = Course.sections;
   const from = Course.from;
   const to = Course.to;
   const teacher_credit = Course.teacher_credit;
   const level_term = Course.level_term;
 
-  var query = `
-  DELETE FROM courses_sections
-  WHERE course_id = $1 AND session=$2;
-    `;
-  var values = [course_id_old, session];
-
-  var client = await connect();
+  const client = await connect();
   try {
-    var resultsIns = await client.query(query, values);
-
-    query = `UPDATE courses SET 
-    course_id=$1,
-    name=$2, 
-    type=$3, 
-    session=$4, 
-    class_per_week=$5,
-    'from' = $6,
-    to = $7,
-    teacher_credit = $8,
-    level_term = $9
-    WHERE
-    course_id=$10
-     `;
-    values = [course_id, name, type, session, class_per_week, from, to, teacher_credit, level_term, course_id_old];
-    resultsIns = await client.query(query, values);
-
-    for (let section of sections) {
-      query =
-        "INSERT INTO courses_sections (course_id, session, batch, section, department) VALUES ($1, $2, $3, $4, $5 )";
-      values = [course_id, session, batch, section, to];
-      const results = await client.query(query, values);
-      if (results.rowCount <= 0) {
-        throw new HttpError(400, "Insertion Failed");
-      }
-    }
+    const query = `
+      UPDATE courses
+      SET course_id=$1, name=$2, type=$3, session=(SELECT value from configs where key = 'CURRENT_SESSION'), class_per_week=$4, \"from\" = $5, \"to\" = $6, teacher_credit = $7, level_term = $8
+      WHERE course_id=$9
+    `;
+    const values = [course_id, name, type, class_per_week, from, to, teacher_credit, level_term, course_id_old];
+    const resultsIns = await client.query(query, values);
 
     if (resultsIns.rowCount <= 0) {
       throw new HttpError(400, "Update Failed");

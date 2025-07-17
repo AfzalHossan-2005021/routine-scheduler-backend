@@ -48,6 +48,9 @@ export async function addCourse(req, res, next) {
 
   try {
     const rowCount = await saveCourse(Course);
+    if (rowCount <= 0) {
+      return res.status(400).json({ message: "Save Failed" });
+    }
     res.status(200).json({ message: "Successfully Saved" });
   } catch (err) {
     next(err);
@@ -86,7 +89,10 @@ export async function editCourse(req, res, next) {
 
   try {
     const rowCount = await updateCourse(Course);
-    res.status(200).json({ Course: Course });
+    if (rowCount <= 0) {
+      return res.status(400).json({ message: "Update Failed" });
+    }
+    res.status(200).json({ message: "Successfully Updated" });
   } catch (err) {
     next(err);
   }
@@ -96,7 +102,10 @@ export async function deleteCourse(req, res, next) {
   const course_id = req.params["course_id"];
   try {
     const rowCount = await removeCourse(course_id);
-    res.status(200).json({ row: rowCount });
+    if (rowCount <= 0) {
+      return res.status(400).json({ message: "Delete Failed" });
+    }
+    res.status(200).json({ message: "Successfully Deleted" });
   } catch (err) {
     next(err);
   }
