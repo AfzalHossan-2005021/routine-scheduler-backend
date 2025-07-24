@@ -100,8 +100,10 @@ export async function getDepartmentalSessionalScheduleAPI(req, res, next) {
 export async function setSessionalScheduleAPI(req, res, next) {
   try {
     let { batch, section, department } = req.params;
+    console.log(req.params);
     batch = parseInt(batch);
     const schedule = req.body;
+    console.log("Setting sessional schedule:", batch, section, department, schedule);
     const ok = await setSessionalSchedule(batch, section, department, schedule);
     if (ok) res.status(200).json({ msg: "successfully send", body: schedule });
     else throw new HttpError(400, "Insert Failed");

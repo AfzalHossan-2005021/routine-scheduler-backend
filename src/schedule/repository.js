@@ -231,7 +231,7 @@ export async function getAllScheduleDB() {
 
 export async function getDepartmentalSessionalSchedule() {
   const query = `
-    SELECT course_id, batch, "section", "day", "time"
+    SELECT course_id, batch, "section", "day", "time", department
     FROM schedule_assignment
     WHERE course_id LIKe 'CSE%'
     AND LENGTH("section") = 2
