@@ -5,6 +5,7 @@ export async function getAllTheoryRoomAssignmentDB() {
     const query = `
         SELECT course_id, section, day, time, room_no
         FROM schedule_assignment
+        WHERE course_id ~ '[13579]$'
         ORDER BY course_id, section, day, time
     `;
     const client = await connect();
@@ -87,4 +88,32 @@ export async function updateSectionRoomAllocationDB(levelTerm, department, secti
   }
   client.release();
   return true;
+}
+
+export async function getAllNonDepartmentalLabRoomAssignmentDB() {
+    const query = `
+        SELECT course_id, section, room_no
+        FROM schedule_assignment
+        WHERE course_id ~ '[02468]$'
+        AND course_id NOT LIKE 'CSE%'
+        ORDER BY course_id, section, room_no
+    `;
+    const client = await connect();
+    const results = await client.query(query);
+    client.release();
+    return results.rows;
+}
+
+export async function updateNonDepartmentalLabRoomAssignmentDB(course_id, section, room_no) {
+    const query = `
+        UPDATE schedule_assignment
+        SET room_no = $3
+        WHERE course_id = $1 AND section = $2
+    `;
+    const values = [course_id, section, room_no];
+
+    const client = await connect();
+    const result = await client.query(query, values);
+    client.release();
+    return result.rowCount > 0;
 }

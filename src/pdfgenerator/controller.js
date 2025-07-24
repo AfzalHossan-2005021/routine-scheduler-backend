@@ -14,6 +14,8 @@ import {
 	getSectionsByLevelTerm,
 } from "./repository.js";
 
+import { getConfigValue } from "../information/config/repository.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -79,26 +81,9 @@ var options = {
 	},
 };
 
-function sortedData(datas) {
-	//sort by day
-	var sortedDatas = [];
-	var keys = Object.keys(datas);
-	var len = keys.length;
-
-	keys.sort(function (a, b) {
-		return dayOrder[a] - dayOrder[b];
-	});
-
-	for (var i = 0; i < len; i++) {
-		var k = keys[i];
-		sortedDatas[k] = datas[k];
-	}
-	return sortedDatas;
-}
-
 async function generateData(rows, mergeSection) {
 	const data = rows.reduce((acc, curr) => {
-		const { day, time, initial, room, course_id, section, type } = curr;
+		const { day, time, initial, room, course_id, section, type, teachers } = curr;
 		const onlySec = mergeSection ? "merged" : section.substr(0, 1);
 		if (!acc[onlySec])
 			acc[onlySec] = {
@@ -109,17 +94,7 @@ async function generateData(rows, mergeSection) {
 				Wednesday: {},
 			};
 		if (!acc[onlySec][day][time]) acc[onlySec][day][time] = {};
-		if (initial) {
-			if (!acc[onlySec][day][time].teachers) {
-				acc[onlySec][day][time].teachers = [];
-			}
-			
-			// Store teacher with seniority rank for later sorting
-			acc[onlySec][day][time].teachers.push({
-				initial: initial,
-				seniority_rank: curr.seniority_rank || 9999 // Default high rank for sorting
-			});
-		}
+		
 		// Create an array of courses for multiple courses in one slot
 		if (!acc[onlySec][day][time].courses) {
 			acc[onlySec][day][time].courses = [];
@@ -132,18 +107,82 @@ async function generateData(rows, mergeSection) {
 		
 		if (existingCourseIndex === -1) {
 			// This is a new course, add it to the array
-			acc[onlySec][day][time].courses.push({
+			const newCourse = {
 				course_id: course_id,
 				room: room,
 				section: section,
-				teachers: acc[onlySec][day][time].teachers ? [...acc[onlySec][day][time].teachers] : [],
+				teachers: [],
 				showSection: null // Will be set below
-			});
+			};
+			
+			// First try to use teachers array from schedule_assignment if available
+			if (teachers && Array.isArray(teachers) && teachers.length > 0) {
+				// Add teachers from the array
+				for (const teacherInitial of teachers) {
+					newCourse.teachers.push({
+						initial: teacherInitial,
+						seniority_rank: curr.seniority_rank || 9999
+					});
+				}
+			} 
+			// Fallback to individual teacher if available
+			else if (initial) {
+				newCourse.teachers.push({
+					initial: initial,
+					seniority_rank: curr.seniority_rank || 9999
+				});
+			}
+			
+			acc[onlySec][day][time].courses.push(newCourse);
 		} else {
 			// Update existing course with new teacher
 			const existingCourse = acc[onlySec][day][time].courses[existingCourseIndex];
 			if (room) existingCourse.room = room;
-			// Teachers are added above to the time slot's teachers array
+			
+			// First try to use teachers array from schedule_assignment if available
+			if (teachers && Array.isArray(teachers) && teachers.length > 0) {
+				// Add teachers from the array that aren't already in the course
+				for (const teacherInitial of teachers) {
+					if (!existingCourse.teachers.find(t => t.initial === teacherInitial)) {
+						existingCourse.teachers.push({
+							initial: teacherInitial,
+							seniority_rank: curr.seniority_rank || 9999
+						});
+					}
+				}
+			}
+			// Fallback to individual teacher if available
+			else if (initial && !existingCourse.teachers.find(t => t.initial === initial)) {
+				existingCourse.teachers.push({
+					initial: initial,
+					seniority_rank: curr.seniority_rank || 9999
+				});
+			}
+		}
+		
+		// Also maintain a global teachers array for the time slot (for backward compatibility)
+		if (!acc[onlySec][day][time].teachers) {
+			acc[onlySec][day][time].teachers = [];
+		}
+		
+		// First try to use teachers array from schedule_assignment if available
+		if (teachers && Array.isArray(teachers) && teachers.length > 0) {
+			// Add teachers from the array that aren't already in the global list
+			for (const teacherInitial of teachers) {
+				if (!acc[onlySec][day][time].teachers.find(t => t.initial === teacherInitial)) {
+					acc[onlySec][day][time].teachers.push({
+						initial: teacherInitial,
+						seniority_rank: curr.seniority_rank || 9999
+					});
+				}
+			}
+		}
+		// Fallback to individual teacher if available
+		else if (initial && !acc[onlySec][day][time].teachers.find(t => t.initial === initial)) {
+			acc[onlySec][day][time].teachers.push({
+				initial: initial,
+				seniority_rank: curr.seniority_rank || 9999
+			});
 		}
 		
 		// Keep the legacy fields for backward compatibility
@@ -173,21 +212,26 @@ async function generateData(rows, mergeSection) {
 			// For completely different sections, show them
 		}
 		
-		// Set showSection for both the legacy property and on the last added course
+		// Set showSection for both the legacy property and on the courses
 		acc[onlySec][day][time].showSection = showSection;
 		
-		// Set showSection on the latest added course
-		if (acc[onlySec][day][time].courses && acc[onlySec][day][time].courses.length > 0) {
-			const lastCourseIndex = acc[onlySec][day][time].courses.length - 1;
-			acc[onlySec][day][time].courses[lastCourseIndex].showSection = showSection;
+		// Set showSection on all courses in this time slot
+		if (acc[onlySec][day][time].courses) {
+			acc[onlySec][day][time].courses.forEach(course => {
+				course.showSection = showSection;
+			});
 		}
 		
 		return acc;
 	}, {});
 
 	const appointments = {};
-	const days = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"];
-	const time = [8, 9, 10, 11, 12, 1, 2, 3, 4];
+	const daysData = await getConfigValue("days");
+	const days = JSON.parse(daysData)
+
+	const timeData = await getConfigValue("times");
+	const time = JSON.parse(timeData);
+
 	for (const section in data) {
 		console.log(section, mergeSection);
 		if (!appointments[section]) appointments[section] = [];
@@ -197,41 +241,53 @@ async function generateData(rows, mergeSection) {
 			for (let i = 0; i < time.length; ) {
 				const t = time[i];
 				if (data[section][day][t]) {
-					// Sort teachers by seniority_rank if available
-					if (data[section][day][t].teachers && data[section][day][t].teachers.length > 0) {
-						// Sort by seniority_rank (lower ranks first)
-						data[section][day][t].teachers.sort((a, b) => 
-							(a.seniority_rank || 9999) - (b.seniority_rank || 9999)
-						);
-						
-						// Join initials with commas
-						data[section][day][t].initial = data[section][day][t].teachers
-							.map(teacher => teacher.initial)
-							.join(", ");
-					}
-					
-					// Process multiple courses if they exist
-					if (data[section][day][t].courses && data[section][day][t].courses.length > 1) {
-						// Mark this cell as having multiple courses
-						data[section][day][t].hasMultipleCourses = true;
-						
-						// For each course, make sure it has the right teacher initials
+					// Process courses and their individual teachers
+					if (data[section][day][t].courses && data[section][day][t].courses.length > 0) {
+						// Sort teachers for each course by seniority_rank
 						data[section][day][t].courses.forEach(course => {
-							// For now, all courses share the same teachers
-							// In a more advanced implementation, you could match teachers to specific courses
-							course.initial = data[section][day][t].initial;
+							if (course.teachers && course.teachers.length > 0) {
+								// Sort by seniority_rank (lower ranks first)
+								course.teachers.sort((a, b) => 
+									(a.seniority_rank || 9999) - (b.seniority_rank || 9999)
+								);
+								
+								// Join initials with commas for this specific course
+								course.initial = course.teachers
+									.map(teacher => teacher.initial)
+									.join(", ");
+							} else {
+								course.initial = "";
+							}
 							
 							// Pass the level_term to the course if it exists
 							if (data[section][day][t].level_term) {
 								course.level_term = data[section][day][t].level_term;
 							}
 						});
-					} else if (data[section][day][t].courses && data[section][day][t].courses.length === 1) {
-						// Single course case - keep the course data but no special handling needed
-						data[section][day][t].courses[0].initial = data[section][day][t].initial;
-						data[section][day][t].hasMultipleCourses = false;
-					} else {
-						// No courses defined (legacy data) - create a default course
+						
+						// Determine if we have multiple courses
+						if (data[section][day][t].courses.length > 1) {
+							data[section][day][t].hasMultipleCourses = true;
+						} else {
+							data[section][day][t].hasMultipleCourses = false;
+						}
+					}
+					
+					// Also maintain global teachers for backward compatibility
+					if (data[section][day][t].teachers && data[section][day][t].teachers.length > 0) {
+						// Sort by seniority_rank (lower ranks first)
+						data[section][day][t].teachers.sort((a, b) => 
+							(a.seniority_rank || 9999) - (b.seniority_rank || 9999)
+						);
+						
+						// Join initials with commas for backward compatibility
+						data[section][day][t].initial = data[section][day][t].teachers
+							.map(teacher => teacher.initial)
+							.join(", ");
+					}
+					
+					// If no courses array exists, create legacy structure
+					if (!data[section][day][t].courses || data[section][day][t].courses.length === 0) {
 						data[section][day][t].courses = [{
 							course_id: data[section][day][t].course_id,
 							room: data[section][day][t].room,
@@ -440,10 +496,6 @@ export async function roomPDF(req, res, next) {
 	}
 }
 
-// Firebase functionality removed
-
-// Firebase upload functionality removed
-
 export async function serveLvlTermPDF(req, res, next) {
 	const lvlTerm = req.params.lvlTerm;
 	var outputDir = path.resolve(__dirname, lvlTerm + ".pdf");
@@ -468,10 +520,6 @@ export async function serveLvlTermPDF(req, res, next) {
 					});
 				}
 				const filename = await createPDFStd(pdfData, lvlTerm, currentSession);
-
-				console.log(filename);
-
-				// res.status(200).json({ message: "PDF generated", appointments });
 			}
 		} catch (err) {
 			next(err);
@@ -616,8 +664,9 @@ export async function generateAllLevelTermPDFs(req, res, next) {
 		const levelTerms = await getLevelTerms();
 		const allPdfData = [];
 		const currentSession = await getCurrentSession();
-		const days = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"];
-		
+		const days = JSON.parse(await getConfigValue("days"));
+		const times = JSON.parse(await getConfigValue("times"));
+
 		// Sort level terms like dictionary (alphabetical order)
 		const sortedLevelTerms = levelTerms.sort((a, b) => 
 			a.level_term.localeCompare(b.level_term)
@@ -642,6 +691,7 @@ export async function generateAllLevelTermPDFs(req, res, next) {
 						const appointment = appointments[section];
 						allPdfData.push({
 							title: formatLevelTerm(lvlTerm, section),
+							inEmpty: false,
 							schedule: appointment,
 						});
 					}
@@ -654,7 +704,7 @@ export async function generateAllLevelTermPDFs(req, res, next) {
 							for (let j = 0; j < days.length; j++) {
 								const day = days[j];
 								const emptyAppointments = [];
-								for (let i = 0; i < 9; i++) {
+								for (let i = 0; i < times.length; i++) {
 									emptyAppointments.push({
 										colspan: 1,
 										initial: "",

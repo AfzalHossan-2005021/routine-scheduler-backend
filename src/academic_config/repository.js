@@ -191,3 +191,43 @@ export async function getLevelTermsDB() {
     }
     return result;
 }
+
+export async function getHostedDepartmentsDB() {
+    const query = `
+        SELECT department
+        FROM hosted_departments
+        ORDER BY department
+    `;
+
+    const client = await connect();
+    const result = await client.query(query);
+    client.release();
+    return result.rows.map(row => row.department);
+}
+
+export async function addHostedDepartmentDB(department) {
+    const query = `
+        INSERT INTO hosted_departments (department)
+        VALUES ($1)
+        ON CONFLICT (department) DO NOTHING
+    `;
+    const values = [department];
+
+    const client = await connect();
+    const result = await client.query(query, values);
+    client.release();
+    return result.rowCount > 0;
+}
+
+export async function deleteHostedDepartmentDB(department) {
+    const query = `
+        DELETE FROM hosted_departments
+        WHERE department = $1
+    `;
+    const values = [department];
+
+    const client = await connect();
+    const result = await client.query(query, values);
+    client.release();
+    return result.rowCount > 0;
+}

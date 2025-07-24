@@ -78,7 +78,7 @@ export async function getTheoryPreferencesStatus() {
       if (row.response) {
         try {
           parsedResponse = JSON.parse(row.response);
-        } catch (error) {          
+        } catch (error) {
           // Try to handle comma-separated string format: "CSE103","CSE109","CSE101"
           try {
             // Remove quotes and split by comma, then trim each item
@@ -164,6 +164,21 @@ export async function finalize() {
     `;
     await client.query(deleteAllQuery);
 
+    // make all teachers empty from courses_sections for current session
+    const deleteSectionQuery = `
+      UPDATE courses_sections
+      SET teachers = '{}'
+      WHERE session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    `;
+    await client.query(deleteSectionQuery);
+
+    const updateScheduleQuery = `
+      UPDATE schedule_assignment
+      SET teachers = '{}'
+      WHERE session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    `;
+    await client.query(updateScheduleQuery);
+
     await client.query("BEGIN");
 
     const teacherResponses = `
@@ -183,7 +198,7 @@ export async function finalize() {
         return acc;
       }, {});
     console.log(teacherResponseResults, noOfTeachersResults);
-    
+
     for (const row of teacherResponseResults) {
       let courses = [];
       try {
@@ -191,7 +206,7 @@ export async function finalize() {
       } catch (error) {
         console.error(`Failed to parse JSON response for teacher ${row.initial}:`, error.message);
         console.error(`Invalid JSON content: ${row.response}`);
-        
+
         // Try to handle comma-separated string format: "CSE103","CSE109","CSE101"
         try {
           // Remove quotes and split by comma, then trim each item
@@ -210,7 +225,7 @@ export async function finalize() {
       const initial = row.initial;
       let theoryCourses = row.theory_courses;
       console.log(initial, theoryCourses);
-      
+
       for (const course_id of courses) {
         if (
           noOfTeachersResults[course_id] === undefined ||
@@ -222,25 +237,44 @@ export async function finalize() {
                     WHERE course_id = $1 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
                     `;
           const checkResult = await client.query(checkQuery, [course_id]);
-          
+
           // Skip if course doesn't exist in current session
           if (checkResult.rows.length === 0) {
             console.log(`Skipping course ${course_id} for teacher ${initial} - not found in courses for current session`);
             continue;
           }
-          
+
           const query = `
                     INSERT INTO teacher_assignment (initial, course_id, session)
                     VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'))
                     `;
           const values = [initial, course_id];
           await client.query(query, values);
+          
+          const updateQuery = `
+            UPDATE courses_sections
+            SET teachers = teachers || $1
+            WHERE course_id = $2
+              AND NOT ($1 = ANY(teachers));
+          `;
+
+          const updateValues = [initial, course_id];
+          await client.query(updateQuery, updateValues);
+
+          const updateScheduleQuery = `
+            UPDATE schedule_assignment
+            SET teachers = teachers || $1
+            WHERE course_id = $2
+              AND NOT ($1 = ANY(teachers));
+          `;
+          await client.query(updateScheduleQuery, updateValues);
+
           if (noOfTeachersResults[course_id] !== undefined)
             noOfTeachersResults[course_id]--;
           console.log(`teacher: ${initial} course: ${course_id} no: ${noOfTeachersResults[course_id]}`);
-          
+
           theoryCourses--;
-          if(theoryCourses <= 0){
+          if (theoryCourses <= 0) {
             break;
           }
           //break;
@@ -248,7 +282,7 @@ export async function finalize() {
       }
     }
     console.log(noOfTeachersResults);
-    
+
 
     await client.query("COMMIT");
   } catch (e) {
@@ -262,12 +296,95 @@ export async function finalize() {
 }
 
 export async function getTheoryAssignment() {
-  const query = `select c.course_id, c."name", (select to_json(array_agg(row_to_json(t))) "teachers" from (select t.initial, t.name from teacher_assignment ta natural join teachers t where ta.course_id = c.course_id and ta.session = c."session") t ) from courses c where c.course_id like 'CSE%' and c.type = 0`;
+  const query = `select c.course_id, c."name", (select to_json(array_agg(row_to_json(t))) "teachers" from (select t.initial, t.name from teacher_assignment ta natural join teachers t where ta.course_id = c.course_id and ta.session = c."session") t ) from courses c where c.course_id like 'CSE%' and c.type = 0 order by c.course_id`;
 
   const client = await connect();
   const result = (await client.query(query)).rows;
   client.release();
   return result;
+}
+
+export async function getAllTheoryTeacherAssignmentDB() {
+  const query = `
+    SELECT 
+      course_id,
+      json_agg(
+        json_build_object(
+          'section', section,
+          'teachers', to_json(teachers)
+        ) ORDER BY section
+      ) AS sections
+    FROM courses_sections
+    WHERE course_id ~ '[13579]$'
+    AND course_id LIKE 'CSE%'
+    GROUP BY course_id
+    ORDER BY course_id
+  `;
+  const client = await connect();
+  const result = await client.query(query);
+  client.release();
+  return result.rows;
+}
+
+export async function getTheoryTeacherAssignmentDB(course_id, section) {
+  const query = `
+    SELECT teachers
+    FROM courses_sections
+    WHERE course_id = $1 AND section = $2
+  `;
+  const values = [course_id, section];
+  const client = await connect();
+  const result = await client.query(query, values);
+  client.release();
+  return result.rows.length > 0 ? result.rows[0].teachers : [];
+}
+
+export async function addTheoryTeacherAssignmentDB(course_id, section, initial) {
+  const client = await connect();
+  try {
+    const insertQuery = `
+      UPDATE courses_sections
+      SET teachers = teachers || $1
+      WHERE course_id = $2 AND section = $3
+        AND NOT ($1 = ANY(teachers));
+    `;
+    await client.query(insertQuery, [initial, course_id, section]);
+
+    const updateScheduleQuery = `
+      UPDATE schedule_assignment
+      SET teachers = teachers || $1
+      WHERE course_id = $2
+        AND section = $3
+        AND NOT ($1 = ANY(teachers));
+    `;
+    await client.query(updateScheduleQuery, [initial, course_id, section]);
+  } finally {
+    client.release();
+  }
+  return true;
+}
+
+export async function deleteTheoryTeacherAssignmentDB(course_id, section, initial) {
+  const client = await connect();
+  try {
+    const deleteQuery = `
+      UPDATE courses_sections
+      SET teachers = array_remove(teachers, $1)
+      WHERE course_id = $2 AND section = $3
+        AND $1 = ANY(teachers);
+    `;
+    await client.query(deleteQuery, [initial, course_id, section]);
+    const updateScheduleQuery = `
+      UPDATE schedule_assignment
+      SET teachers = array_remove(teachers, $1)
+      WHERE course_id = $2 AND section = $3
+        AND $1 = ANY(teachers);
+    `;
+    await client.query(updateScheduleQuery, [initial, course_id, section]);
+  } finally {
+    client.release();
+  }
+  return true;
 }
 
 export async function getTeacherAssignmentDB() {
@@ -338,7 +455,7 @@ export async function getSessionalPreferencesStatus() {
         } catch (error) {
           console.error(`Failed to parse JSON response for teacher ${row.initial}:`, error.message);
           console.error(`Invalid JSON content: ${row.response}`);
-          
+
           // Try to handle comma-separated string format: "CSE103","CSE109","CSE101"
           try {
             // Remove quotes and split by comma, then trim each item
@@ -477,7 +594,7 @@ export async function finalizeSessional() {
       } catch (error) {
         console.error(`Failed to parse JSON response for teacher ${row.initial}:`, error.message);
         console.error(`Invalid JSON content: ${row.response}`);
-        
+
         // Try to handle comma-separated string format: "CSE103","CSE109","CSE101"
         try {
           // Remove quotes and split by comma, then trim each item
@@ -609,7 +726,7 @@ export async function saveReorderedTeacherPreferenceDB(initial, response) {
       SET response = $1 
       WHERE initial = $2 AND type = 'theory-pref'
     `;
-    
+
     const result = await client.query(query, [JSON.stringify(response), initial]);
     return result.rowCount > 0;
   } finally {
@@ -623,20 +740,53 @@ export async function setTeacherAssignmentDB(assignment) {
     if ((assignment.initial === "None" || assignment.initial === null) && (assignment.old_initial === "None" || assignment.old_initial === null)) {
       return;
     }
-    if(assignment.initial === "None" || assignment.initial === undefined || assignment.initial === null){
+    if (assignment.initial === "None" || assignment.initial === undefined || assignment.initial === null) {
       const deleteQuery = `
         DELETE FROM teacher_assignment
         WHERE course_id = $1 AND initial = $2 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
       `;
       const deleteValues = [assignment.course_id, assignment.old_initial];
       await client.query(deleteQuery, deleteValues);
-    } else if( assignment.old_initial === "None" || assignment.old_initial === undefined || assignment.old_initial === null){
+
+      const sectionUpdateQuery = `
+        UPDATE courses_sections
+        SET teachers = array_remove(teachers, $1)
+        WHERE course_id = $2 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+          AND $1 = ANY(teachers);
+      `;
+      const sectionUpdateValues = [assignment.old_initial, assignment.course_id];
+      await client.query(sectionUpdateQuery, sectionUpdateValues);
+
+      const scheduleUpdateQuery = `
+        UPDATE schedule_assignment
+        SET teachers = array_remove(teachers, $1)
+        WHERE course_id = $2 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+          AND $1 = ANY(teachers);
+      `;
+      await client.query(scheduleUpdateQuery, sectionUpdateValues);
+    } else if (assignment.old_initial === "None" || assignment.old_initial === undefined || assignment.old_initial === null) {
       const insertQuery = `
         INSERT INTO teacher_assignment (course_id, initial, session)
         VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'))
       `;
       const insertValues = [assignment.course_id, assignment.initial];
       await client.query(insertQuery, insertValues);
+      const sectionUpdateQuery = `
+        UPDATE courses_sections
+        SET teachers = teachers || $1
+        WHERE course_id = $2 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+          AND NOT ($1 = ANY(teachers));
+      `;
+      const sectionUpdateValues = [assignment.initial, assignment.course_id];
+      await client.query(sectionUpdateQuery, sectionUpdateValues);
+
+      const scheduleUpdateQuery = `
+        UPDATE schedule_assignment
+        SET teachers = teachers || $1
+        WHERE course_id = $2 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+          AND NOT ($1 = ANY(teachers));
+      `;
+      await client.query(scheduleUpdateQuery, sectionUpdateValues);
     } else {
       const updateQuery = `
       UPDATE teacher_assignment
@@ -645,6 +795,22 @@ export async function setTeacherAssignmentDB(assignment) {
       `;
       const updateValues = [assignment.initial, assignment.course_id, assignment.old_initial];
       await client.query(updateQuery, updateValues);
+      const sectionUpdateQuery = `
+        UPDATE courses_sections
+        SET teachers = array_replace(teachers, $1, $2)
+        WHERE course_id = $3 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+          AND $1 = ANY(teachers);
+      `;
+      const sectionUpdateValues = [assignment.old_initial, assignment.initial, assignment.course_id];
+      await client.query(sectionUpdateQuery, sectionUpdateValues);
+
+      const scheduleUpdateQuery = `
+        UPDATE schedule_assignment
+        SET teachers = array_replace(teachers, $1, $2)
+        WHERE course_id = $3 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+          AND $1 = ANY(teachers);
+      `;
+      await client.query(scheduleUpdateQuery, sectionUpdateValues);
     }
   } catch (error) {
     await client.query("ROLLBACK");
@@ -655,36 +821,50 @@ export async function setTeacherAssignmentDB(assignment) {
   }
 }
 
-export async function setTeacherSessionalAssignmentDB(assignment){
-  if(assignment.initial === "None"){
+export async function setTeacherSessionalAssignmentDB(assignment) {
+  if (assignment.initial === "None") {
     return;
   }
   const query = `
     INSERT INTO teacher_sessional_assignment (initial, course_id, session, batch, section)
     VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4)
   `;
+  const updateScheduleQuery = `
+  UPDATE schedule_assignment
+  SET teachers = teachers || $1
+  WHERE course_id = $2 AND batch = $3 AND section = $4
+  AND NOT ($1 = ANY(teachers));
+  `;
   const values = [assignment.initial, assignment.course_id, assignment.batch, assignment.section];
   const client = await connect();
+
   try {
     const result = await client.query(query, values);
     if (result.rowCount <= 0) throw new HttpError(400, "Insertion Failed");
+    await client.query(updateScheduleQuery, values);
     return result.rows;
   } finally {
     client.release();
   }
 }
 
-export async function deleteTeacherSessionalAssignmentDB(initial, course_id, batch, section){
+export async function deleteTeacherSessionalAssignmentDB(initial, course_id, batch, section) {
   const query = `
     DELETE FROM teacher_sessional_assignment
     WHERE initial = $1 AND course_id = $2 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION') AND batch = $3 AND section = $4
   `;
+  const updateScheduleQuery = `
+    UPDATE schedule_assignment
+    SET teachers = array_remove(teachers, $1)
+    WHERE course_id = $2 AND batch = $3 AND section = $4
+    AND $1 = ANY(teachers);
+  `;
   const values = [initial, course_id, batch, section];
-  console.log(values);
   const client = await connect();
   try {
     const result = await client.query(query, values);
     if (result.rowCount <= 0) throw new HttpError(400, "Deletion Failed");
+    await client.query(updateScheduleQuery, values);
     return true;
   } finally {
     client.release();

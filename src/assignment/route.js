@@ -22,7 +22,11 @@ import {
   deleteTeacherSessionalAssignmentAPI,
   saveReorderedTeacherPreference,
   resendTheoryPrefMail,
-  resendSessionalPrefMail
+  resendSessionalPrefMail,
+  getAllTheoryTeacherAssignment,
+  getTheoryTeacherAssignment,
+  addTheoryTeacherAssignment,
+  deleteTheoryTeacherAssignment
 } from "./controller.js";
 
 router.get("/theory/initiate", sendTheoryPrefMail);
@@ -48,5 +52,10 @@ router.get("/theory/:initial", getTeacherTheoryAssigmentsAPI);
 
 router.get("/room/status", getLabRoomAssignment);
 router.post("/room/assign", setLabRoomAssignemnt);
+
+router.get("/theory-teacher/get/all", getAllTheoryTeacherAssignment);
+router.get("/theory-teacher/get/:course_id/:section", getTheoryTeacherAssignment);
+router.post("/theory-teacher/add", addTheoryTeacherAssignment);
+router.delete("/theory-teacher/delete/:course_id/:section/:initial", deleteTheoryTeacherAssignment);
 
 export default router;

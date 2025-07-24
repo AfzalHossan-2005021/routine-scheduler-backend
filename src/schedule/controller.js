@@ -228,8 +228,8 @@ export async function getAllSchedule(req, res, next) {
 
 export async function getCourseAllScheduleAPI(req, res, next) {
   try {
-    const { course_id } = req.params;
-    const result = await getCourseAllSchedule(course_id);
+    const { initial, course_id } = req.params;
+    const result = await getCourseAllSchedule(initial, course_id);
     res.status(200).json(result);
   } catch (err) {
     next(err);

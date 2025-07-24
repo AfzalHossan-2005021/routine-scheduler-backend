@@ -1,4 +1,5 @@
 import { connect } from "../config/database.js";
+import { getTheoryTeacherAssignmentDB } from "../assignment/repository.js";
 
 /**
  * Get schedule configuration values (times, days, possibleLabTimes)
@@ -95,11 +96,12 @@ export async function setTheorySchedule(batch, section, course, schedule) {
         const getDeptQuery = `SELECT "to" FROM courses WHERE course_id = $1`;
         const deptResult = await client.query(getDeptQuery, [course]);
         const department = deptResult.rows[0].to;
+        const teacherAssignments = await getTheoryTeacherAssignmentDB(course, section);
         const insertQuery = `
-          INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department)
-          VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6)
+          INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department, teachers)
+          VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6, $7)
         `;
-        await client.query(insertQuery, [batch, section, course, slot.day, slot.time, department]);
+        await client.query(insertQuery, [batch, section, course, slot.day, slot.time, department, teacherAssignments]);
       }
     }
     await client.query("COMMIT");
@@ -335,15 +337,16 @@ export async function ensureEmailTemplateExists(type) {
   }
 }
 
-export async function getCourseAllSchedule(course_id) {
+export async function getCourseAllSchedule(initial, course_id) {
   const query = `
-    SELECT course_id, "day", "time"
+    SELECT course_id, "day", "time", section
     FROM schedule_assignment
     WHERE course_id = $1
+    AND $2 = ANY(teachers)
     AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
   `;
   const client = await connect();
-  const results = await client.query(query, [course_id]);
+  const results = await client.query(query, [course_id, initial]);
   client.release();
   return results.rows;
 }

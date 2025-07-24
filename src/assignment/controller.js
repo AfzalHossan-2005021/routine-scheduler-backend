@@ -25,7 +25,11 @@ import {
   setTeacherAssignmentDB,
   setTeacherSessionalAssignmentDB,
   getTeacherMailByInitial,
-  saveReorderedTeacherPreferenceDB
+  saveReorderedTeacherPreferenceDB,
+  getAllTheoryTeacherAssignmentDB,
+  getTheoryTeacherAssignmentDB,
+  addTheoryTeacherAssignmentDB,
+  deleteTheoryTeacherAssignmentDB,
 } from "./repository.js";
 import { HttpError } from "../config/error-handle.js";
 
@@ -362,6 +366,51 @@ export async function resendSessionalPrefMail(req, res, next) {
     const email = await getTeacherMailByInitial(initial);
     await resendFormMailHandler({ initial, email, type: 'sessional-pref' });
     res.status(200).json({ msg: 'Sessional preference mail resent successfully' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getAllTheoryTeacherAssignment(req, res, next) {
+  try {
+    const result = await getAllTheoryTeacherAssignmentDB();
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getTheoryTeacherAssignment(req, res, next) {
+  const { course_id, section } = req.params;
+  console.log(req.params)
+  try {
+    const result = await getTheoryTeacherAssignmentDB(course_id, section);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function addTheoryTeacherAssignment(req, res, next) {
+  const { course_id, section, initial } = req.body;
+  try {
+    const result = await addTheoryTeacherAssignmentDB(course_id, section, initial);
+    if (!result) {
+      throw new HttpError(400, "Failed to add theory teacher assignment");
+    }
+    res.status(200).json({ message: "Theory teacher assignment added successfully" });
+  } catch (err) {
+    next(err);
+  }
+}
+export async function deleteTheoryTeacherAssignment(req, res, next) {
+  const { course_id, section, initial } = req.params;
+  try {
+    const result = await deleteTheoryTeacherAssignmentDB(course_id, section, initial);
+    if (!result) {
+      throw new HttpError(400, "Failed to delete theory teacher assignment");
+    }
+    res.status(200).json({ message: "Theory teacher assignment deleted successfully" });
   } catch (err) {
     next(err);
   }

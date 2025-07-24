@@ -15,7 +15,10 @@ import {
     addBatchAPI,
     deleteBatchAPI,
     getDepartmentsAPI,
-    getLevelTermsAPI
+    getLevelTermsAPI,
+    getHostedDepartmentsAPI,
+    addHostedDepartmentAPI,
+    deleteHostedDepartmentAPI
 } from './controller.js';
 
 router.get("/get/section_count", getSectionCountAPI);
@@ -34,5 +37,9 @@ router.delete("/delete/batch", deleteBatchAPI);
 
 router.get("/get/departments", getDepartmentsAPI);
 router.get("/get/level_terms", getLevelTermsAPI);
+    
+router.get("/get/hosted_departments", getHostedDepartmentsAPI);
+router.post("/add/hosted_department", addHostedDepartmentAPI);
+router.delete("/delete/hosted_department", deleteHostedDepartmentAPI);
 
 export default router;
