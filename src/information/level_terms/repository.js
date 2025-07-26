@@ -279,8 +279,8 @@ async function initializeCoursesTable(activeCourses) {
 
 async function initializeCoursesSectionsTable() {
     const query = `
-        INSERT INTO courses_sections (course_id, session, batch, section, room_no, department)
-        SELECT c.course_id, c.session, s.batch, s.section, s.room, s.department
+        INSERT INTO courses_sections (course_id, session, batch, section, department)
+        SELECT c.course_id, c.session, s.batch, s.section, s.department
         FROM courses c
         JOIN sections s 
         ON c.level_term = s.level_term AND c.type = s.type AND c."to" = s.department;

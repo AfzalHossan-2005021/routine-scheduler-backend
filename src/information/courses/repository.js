@@ -5,7 +5,7 @@ export async function getAll() {
   try {
     const query = `
       SELECT * 
-      FROM courses
+      FROM all_courses
       WHERE course_id != 'CT'
       ORDER BY "to", level_term, course_id
     `;
@@ -51,22 +51,20 @@ export async function saveCourse(Course) {
   const class_per_week = Course.class_per_week;
   const from = Course.from;
   const to = Course.to;
-  const teacher_credit = Course.teacher_credit;
   const level_term = Course.level_term;
 
   const query =`
-    INSERT INTO courses (course_id, name, type, session, class_per_week, \"from\", \"to\", teacher_credit, level_term)
-    VALUES ($1, $2, $3, (SELECT value from configs where key = 'CURRENT_SESSION'), $4, $5, $6, $7, $8)
-    ON CONFLICT (course_id, session) DO UPDATE
+    INSERT INTO all_courses (course_id, name, type, class_per_week, \"from\", \"to\", level_term)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    ON CONFLICT (course_id, level_term) DO UPDATE
     SET name = EXCLUDED.name,
         type = EXCLUDED.type,
         class_per_week = EXCLUDED.class_per_week,
         "from" = EXCLUDED."from",
         "to" = EXCLUDED."to",
-        teacher_credit = EXCLUDED.teacher_credit,
         level_term = EXCLUDED.level_term
   `;
-  const values = [course_id, name, type, class_per_week, from, to, teacher_credit, level_term];
+  const values = [course_id, name, type, class_per_week, from, to, level_term];
 
   const client = await connect();
   try {
@@ -96,11 +94,11 @@ export async function updateCourse(Course) {
   const client = await connect();
   try {
     const query = `
-      UPDATE courses
-      SET course_id=$1, name=$2, type=$3, session=(SELECT value from configs where key = 'CURRENT_SESSION'), class_per_week=$4, \"from\" = $5, \"to\" = $6, teacher_credit = $7, level_term = $8
-      WHERE course_id=$9
+      UPDATE all_courses
+      SET course_id=$1, name=$2, type=$3, session=(SELECT value from configs where key = 'CURRENT_SESSION'), class_per_week=$4, \"from\" = $5, \"to\" = $6, level_term = $7
+      WHERE course_id=$8
     `;
-    const values = [course_id, name, type, class_per_week, from, to, teacher_credit, level_term, course_id_old];
+    const values = [course_id, name, type, class_per_week, from, to, level_term, course_id_old];
     const resultsIns = await client.query(query, values);
 
     if (resultsIns.rowCount <= 0) {
@@ -115,7 +113,7 @@ export async function updateCourse(Course) {
 
 export async function removeCourse(course_id) {
   const query = `
-      DELETE FROM courses
+      DELETE FROM all_courses
       WHERE course_id = $1
     `;
   const values = [course_id];
@@ -173,9 +171,9 @@ export async function getNonDeptTheories() {
 export async function getSessionalCoursesByDeptLevelTerm(department, level_term) {
   const query = `
     SELECT course_id, name, class_per_week
-    FROM all_courses
+    FROM courses
     WHERE type = 1
-    AND all_courses.to = $1
+    AND courses.to = $1
     AND level_term = $2
     ORDER BY course_id
     `;
@@ -189,9 +187,9 @@ export async function getSessionalCoursesByDeptLevelTerm(department, level_term)
 export async function getTheoryCoursesByDeptLevelTerm(department, level_term) {
   const query = `
     SELECT course_id, name, class_per_week
-    FROM all_courses
+    FROM courses
     WHERE type = 0
-    AND all_courses.to = $1
+    AND courses.to = $1
     AND level_term = $2
     ORDER BY course_id
     `;

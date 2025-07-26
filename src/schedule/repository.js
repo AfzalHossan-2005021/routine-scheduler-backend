@@ -98,8 +98,8 @@ export async function setTheorySchedule(batch, section, course, schedule) {
         const department = deptResult.rows[0].to;
         const teacherAssignments = await getTheoryTeacherAssignmentDB(course, section);
         const insertQuery = `
-          INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department, teachers)
-          VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6, $7)
+          INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department, room_no, teachers)
+          VALUES ($1, $2::varchar, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6::varchar, (SELECT room FROM sections WHERE batch = $1 AND section = $2::varchar AND department = $6::varchar), $7)
         `;
         await client.query(insertQuery, [batch, section, course, slot.day, slot.time, department, teacherAssignments]);
       }

@@ -114,8 +114,8 @@ export async function saveTheoryScheduleForm(initial, response) {
   schedulePref.forEach((row) => {
     const teacherAssignments = getTheoryTeacherAssignmentDB(course_id, row.section);
     const query = `
-      INSERT INTO schedule_assignment (course_id, session, batch, section, day, time, department, teachers) 
-      VALUES ($1, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $2, $3, $4, $5, $6, $7) 
+      INSERT INTO schedule_assignment (course_id, session, batch, section, day, time, department, room_no, teachers) 
+      VALUES ($1, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $2, $3, $4, $5, $6, (SELECT room FROM sections WHERE batch = $2 AND section = $3 AND department = $6), $7) 
       ON CONFLICT DO NOTHING
     `;
     const values = [course_id, row.batch, row.section, row.day, row.time, dept, teacherAssignments];

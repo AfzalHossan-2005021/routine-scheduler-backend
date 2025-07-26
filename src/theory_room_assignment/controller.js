@@ -11,7 +11,7 @@ import { HttpError } from "../config/error-handle.js";
 export async function getAllTheoryRoomAssignmentAPI(req, res, next) {
   try {
     const result = await getAllTheoryRoomAssignmentDB();
-    if (!result) throw new HttpError(400, "Insert Failed");
+    if (!result) throw new HttpError(400, "Fetch Failed");
     res.status(200).json(result);
   } catch (e) {
     next(e);
@@ -20,7 +20,6 @@ export async function getAllTheoryRoomAssignmentAPI(req, res, next) {
 
 export async function updateTheoryRoomAssignmentAPI(req, res, next) {
   try {
-    console.log("Received request body:", req.body);
     const { course_id, section, day, time, room_no } = req.body;
     if (!course_id || !section || !day || !time) {
       throw new HttpError(400, "All fields are required");
