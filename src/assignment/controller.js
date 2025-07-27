@@ -28,8 +28,12 @@ import {
   saveReorderedTeacherPreferenceDB,
   getAllTheoryTeacherAssignmentDB,
   getTheoryTeacherAssignmentDB,
+  calculateTeacherTotalCredit,
+  calculateAllTeachersCredits,
   addTheoryTeacherAssignmentDB,
   deleteTheoryTeacherAssignmentDB,
+  getTheoryDistributionDB,
+  getSessionalDistributionDB,
 } from "./repository.js";
 import { HttpError } from "../config/error-handle.js";
 
@@ -411,6 +415,44 @@ export async function deleteTheoryTeacherAssignment(req, res, next) {
       throw new HttpError(400, "Failed to delete theory teacher assignment");
     }
     res.status(200).json({ message: "Theory teacher assignment deleted successfully" });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getTeacherTotalCreditAPI(req, res, next) {
+  const { initial } = req.params;
+  
+  try {
+    const result = await calculateTeacherTotalCredit(initial);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getAllTeachersCreditAPI(req, res, next) {
+  try {
+    const result = await calculateAllTeachersCredits();
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getTheoryDistributionAPI(req, res, next) {
+  try {
+    const result = await getTheoryDistributionDB();
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getSessionalDistributionAPI(req, res, next) {
+  try {
+    const result = await getSessionalDistributionDB();
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }

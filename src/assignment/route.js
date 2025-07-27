@@ -26,7 +26,11 @@ import {
   getAllTheoryTeacherAssignment,
   getTheoryTeacherAssignment,
   addTheoryTeacherAssignment,
-  deleteTheoryTeacherAssignment
+  deleteTheoryTeacherAssignment,
+  getTeacherTotalCreditAPI,
+  getAllTeachersCreditAPI,
+  getTheoryDistributionAPI,
+  getSessionalDistributionAPI
 } from "./controller.js";
 
 router.get("/theory/initiate", sendTheoryPrefMail);
@@ -57,5 +61,15 @@ router.get("/theory-teacher/get/all", getAllTheoryTeacherAssignment);
 router.get("/theory-teacher/get/:course_id/:section", getTheoryTeacherAssignment);
 router.post("/theory-teacher/add", addTheoryTeacherAssignment);
 router.delete("/theory-teacher/delete/:course_id/:section/:initial", deleteTheoryTeacherAssignment);
+
+// Credit calculation routes
+router.get("/credit/teacher/:initial", getTeacherTotalCreditAPI);
+router.get("/credit/all", getAllTeachersCreditAPI);
+
+// Theory distribution route
+router.get("/theory-distribution", getTheoryDistributionAPI);
+
+// Sessional distribution route
+router.get("/sessional-distribution", getSessionalDistributionAPI);
 
 export default router;
