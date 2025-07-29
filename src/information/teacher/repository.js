@@ -39,33 +39,50 @@ export async function saveTeacher(teacher) {
   const offers_msc = teacher.offers_msc;
   const teacher_credits_offered = teacher.teacher_credits_offered;
 
-  const query =
-    "INSERT INTO teachers (initial, name,surname,email,seniority_rank,active,theory_courses,sessional_courses, designation, full_time_status, offers_thesis_1, offers_thesis_2, offers_msc, teacher_credits_offered) VALUES ($1, $2, $3,$4,$5,$6,$7,$8, $9, $10, $11, $12, $13, $14 )";
-  const values = [
-    initial,
-    name,
-    surname,
-    email,
-    seniority_rank,
-    active,
-    theory_courses,
-    sessional_courses,
-    designation,
-    full_time_status,
-    offers_thesis_1,
-    offers_thesis_2,
-    offers_msc,
-    teacher_credits_offered
-  ];
-
   const client = await connect();
-  const results = await client.query(query, values);
-  client.release();
+  try {
+    // Check if any teacher already has this or greater seniority_rank
+    const checkRes = await client.query(
+      'SELECT COUNT(*) FROM teachers WHERE seniority_rank = $1',
+      [seniority_rank]
+    );
+    const count = parseInt(checkRes.rows[0].count, 10);
 
-  if (results.rowCount <= 0) {
-    throw new HttpError(400, "Insert Failed");
-  } else {
-    return results.rowCount; // Return the first found admin
+    if (count > 0) {
+      // Step 1: Increment seniority_rank for affected teachers
+      await client.query(
+        'UPDATE teachers SET seniority_rank = seniority_rank + 1 WHERE seniority_rank >= $1',
+        [seniority_rank]
+      );
+    }
+
+    // Step 2: Insert the new teacher
+    const query =
+      "INSERT INTO teachers (initial, name,surname,email,seniority_rank,active,theory_courses,sessional_courses, designation, full_time_status, offers_thesis_1, offers_thesis_2, offers_msc, teacher_credits_offered) VALUES ($1, $2, $3,$4,$5,$6,$7,$8, $9, $10, $11, $12, $13, $14 )";
+    const values = [
+      initial,
+      name,
+      surname,
+      email,
+      seniority_rank,
+      active,
+      theory_courses,
+      sessional_courses,
+      designation,
+      full_time_status,
+      offers_thesis_1,
+      offers_thesis_2,
+      offers_msc,
+      teacher_credits_offered
+    ];
+    const results = await client.query(query, values);
+    if (results.rowCount <= 0) {
+      throw new HttpError(400, "Insert Failed");
+    } else {
+      return results.rowCount;
+    }
+  } finally {
+    client.release();
   }
 }
 
@@ -132,18 +149,35 @@ export async function updateTeacher(teacher) {
 }
 
 export async function removeTeacher(initial) {
-  const query = `
-      DELETE FROM teachers
-      WHERE initial = $1
-    `;
-  const values = [initial];
+  // Get the seniority_rank of the teacher to be removed
   const client = await connect();
-  const results = await client.query(query, values);
-  client.release();
+  try {
+    const getRankRes = await client.query(
+      'SELECT seniority_rank FROM teachers WHERE initial = $1',
+      [initial]
+    );
+    if (getRankRes.rows.length === 0) {
+      throw new HttpError(404, "Delete Failed");
+    }
+    const removedRank = getRankRes.rows[0].seniority_rank;
 
-  if (results.rowCount <= 0) {
-    throw new HttpError(404, "Delete Failed");
-  } else {
-    return results.rowCount; // Return the first found admin
+    // Delete the teacher
+    const deleteRes = await client.query(
+      `DELETE FROM teachers WHERE initial = $1`,
+      [initial]
+    );
+    if (deleteRes.rowCount <= 0) {
+      throw new HttpError(404, "Delete Failed");
+    }
+
+    // Decrement seniority_rank for teachers with greater seniority
+    await client.query(
+      'UPDATE teachers SET seniority_rank = seniority_rank - 1 WHERE seniority_rank > $1',
+      [removedRank]
+    );
+
+    return deleteRes.rowCount;
+  } finally {
+    client.release();
   }
 }

@@ -2,6 +2,7 @@ import express from "express";
 import {
   getAllSchedule,
   getCurrStatus,
+  getScheduleConfigValues,
   getSessionalScheduleAPI,
   getTheoryScheduleAPI,
   initiate,
@@ -16,7 +17,7 @@ import {
 
 const router = express.Router();
 
-router.get("/theory/:batch/:section", getTheoryScheduleAPI);
+router.get("/theory/:department/:batch/:section", getTheoryScheduleAPI);
 router.post("/theory/:batch/:section/:course", setTheoryScheduleAPI);
 
 router.get("/sessional/:batch/:section", getSessionalScheduleAPI);
@@ -28,9 +29,12 @@ router.get("/contradiction/room/:batch/:section/:course_id", roomContradiction)
 router.get("/contradiction/teacher/:batch/:section/:course_id", teacherContradiction)
 
 router.get("/theory/initiate", initiate);
+
+// Get schedule configuration values
+router.get("/configs", getScheduleConfigValues);
 router.get("/theory/status", getCurrStatus);
-router.get("/:course_id", getCourseAllScheduleAPI);
-router.get("/:course_id/:section", getCourseSectionalScheduleAPI);
+router.get("/get/theory/:initial/:course_id", getCourseAllScheduleAPI);
+router.get("/get/sessional/:course_id/:section", getCourseSectionalScheduleAPI);
 // router.get("/theory/finalize", null);
 
 export default router;

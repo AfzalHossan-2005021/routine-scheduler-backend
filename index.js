@@ -7,9 +7,15 @@ import route from './route.js';
 import errorHandler from './src/config/error-handle.js';
 
 import { connect } from "./src/config/database.js";
+import { initSystemConfigs } from './src/config/init-config.js';
 
 connect()
-  .then(() => console.log("Connected to the database ... "))
+  .then(() => {
+    console.log("Connected to the database ... ");
+    // Initialize system configurations
+    return initSystemConfigs();
+  })
+  .then(() => console.log("System configurations initialized..."))
   .catch((err) => console.log(err));
 
 const app = express();
@@ -17,7 +23,7 @@ const port = process.env.PORT || 8000;
 
 
 app.use(cors({
-  origin: 'http://localhost:3000', // Allow only the frontend's origin
+  origin: ['http://localhost:3000', 'https://routine-scheduler-buet.duckdns.org'], // Allow both development and production origins
   credentials: true, // Allow cookies if needed
 }));
 

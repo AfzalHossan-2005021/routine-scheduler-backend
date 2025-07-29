@@ -1,6 +1,9 @@
+import { HttpError } from '../../config/error-handle.js';
 import {
     getAll,
     updateLevelTerms,
+    addLevelTermDB,
+    deleteLevelTermDB,
     initiateDB,
     getAllActiveDepartments,
     getDepartmentalLevelTermBatches
@@ -17,6 +20,31 @@ export async function setLevelTerms(req, res, next) {
         await updateLevelTerms(levelTerms);
         await initiateDB(levelTerms);
         res.json({ message: "Initiated successfully" });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function addLevelTermAPI(req, res, next) {
+    const { level_term, department } = req.body;
+    try {
+        if (!level_term || !department) {
+            throw new HttpError(400, "Level term and department are required");
+        }
+        const result = await addLevelTermDB(level_term, department);
+        if (!result) throw new HttpError(400, "Insert Failed");
+        res.status(200).json({ success: true });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function deleteLevelTermAPI(req, res, next) {
+    const { level_term, department } = req.body;
+    try{
+        const result = await deleteLevelTermDB(level_term, department);
+        if(!result) throw new HttpError(404, "Delete Failed");
+        res.status(200).json({success: true});        
     } catch (error) {
         next(error);
     }

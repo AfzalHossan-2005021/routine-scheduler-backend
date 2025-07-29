@@ -1,20 +1,16 @@
+import e from "express";
 import { connect } from "../../config/database.js";
 import { HttpError } from "../../config/error-handle.js";
 
-export async function getAll(){
+export async function getAll() {
     const query = `
         SELECT 
             ltu.department, 
             ltu.level_term, 
             ltu.active,
-            ltu.batch,
-            COALESCE(COUNT(s.section), 0) AS section_count
+            ltu.batch
         FROM 
             level_term_unique ltu
-        LEFT JOIN 
-            sections s ON ltu.department = s.department 
-                    AND ltu.level_term = s.level_term
-                    AND s.type = 0
         GROUP BY 
             ltu.department, 
             ltu.level_term,
@@ -31,7 +27,7 @@ export async function getAll(){
     return level_terms;
 }
 
-export async function getAllActiveDepartments(){
+export async function getAllActiveDepartments() {
     const query = `
         SELECT DISTINCT department
         FROM level_term_unique
@@ -72,26 +68,76 @@ export async function updateLevelTerms(levelTerms) {
     const client = await connect();
 
     try {
-        await client.query("BEGIN"); 
+        await client.query("BEGIN");
 
         const promises = levelTerms.map(levelTerm => {
-            const values = [levelTerm.active, parseInt(levelTerm.batch), levelTerm.level_term, levelTerm.department];
+            const batch_value = (levelTerm.batch === "" || levelTerm.batch === undefined) ? 0 : parseInt(levelTerm.batch);
+            const values = [levelTerm.active, batch_value, levelTerm.level_term, levelTerm.department];
             return client.query(query, values);
         });
 
-        await Promise.all(promises); 
+        await Promise.all(promises);
 
-        await client.query("COMMIT"); 
+        await client.query("COMMIT");
     } catch (error) {
-        await client.query("ROLLBACK"); 
+        await client.query("ROLLBACK");
         throw error;
     } finally {
         client.release();
     }
 }
 
+export async function addLevelTermDB(level_term, department) {
+    const query = `
+        INSERT INTO level_term_unique (level_term, department)
+        VALUES ($1, $2)
+        ON CONFLICT (level_term, department) DO UPDATE SET batch = excluded.batch;
+    `;
+    const client = await connect();
+    const values = [level_term, department];
+    let result = false;
+    try {
+        await client.query("BEGIN");
+        const res = await client.query(query, values);
+        if (res.rowCount > 0) {
+            result = true;
+        }
+        await client.query("COMMIT");
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+        return result;
+    }
+}
 
-async function clearTables(){
+export async function deleteLevelTermDB(level_term, department) {
+    const query = `
+        DELETE FROM level_term_unique
+        WHERE level_term = $1
+        AND department = $2
+    `;
+    const client = await connect();
+    const values = [level_term, department];
+
+    let result = false;
+
+    try {
+        await client.query("BEGIN");
+        await client.query(query, values);
+        await client.query("COMMIT");
+        result = true;
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+        return result;
+    }
+}
+
+async function clearTables() {
     const query = `
         truncate schedule_assignment, teacher_sessional_assignment, courses_sections, sections, teacher_assignment, courses, lab_room_assignment, forms;
     `;
@@ -111,7 +157,7 @@ async function clearTables(){
     }
 }
 
-export async function getSession(){
+export async function getSession() {
     const query = `
         SELECT value
         FROM configs
@@ -123,24 +169,38 @@ export async function getSession(){
     return result.rows[0].value;
 }
 
-async function initializeSectionsTable(levelTerms, session){
+async function initializeSectionsTable(levelTerms, session) {
     const activeLevelTerms = levelTerms.filter((levelTerm) => levelTerm.active);
     const client = await connect();
     try {
         await client.query("BEGIN");
-        for (const levelTerm of activeLevelTerms){
-            for(let i = 0; i < parseInt(levelTerm.section_count); i++){
+        const section_count_query = `
+            select section_count, subsection_count_per_section
+            from section_count
+            where batch = $1 and department = $2;
+        `;
+        for (const levelTerm of activeLevelTerms) {
+            const section_count_values = [parseInt(levelTerm.batch), levelTerm.department];
+            const section_count_result = await client.query(section_count_query, section_count_values);
+            if (section_count_result.rows.length === 0) {
+                throw new HttpError(404, `Section count not found for batch ${levelTerm.batch} and department ${levelTerm.department}`);
+            }
+            const levelTermSectionCount = parseInt(section_count_result.rows[0].section_count);
+            const subsection_count_per_section = parseInt(section_count_result.rows[0].subsection_count_per_section);
+            for (let i = 0; i < levelTermSectionCount; i++) {
                 const section = String.fromCharCode(65 + i);
                 const query = `
-                    INSERT INTO sections (batch, section, "type", session, level_term, department) VALUES ($1, $2, $3,$4, $5, $6) ON CONFLICT (batch, section) DO NOTHING;
+                    INSERT INTO sections (batch, section, "type", session, level_term, department)
+                    VALUES ($1, $2, $3,$4, $5, $6)
+                    ON CONFLICT (department, batch, section)
+                    DO UPDATE SET "type" = $3, session = $4, level_term = $5
                 `;
                 const values = [parseInt(levelTerm.batch), section, 0, session, levelTerm.level_term, levelTerm.department];
-                const values1 = [parseInt(levelTerm.batch), `${section}1`, 1, session, levelTerm.level_term, levelTerm.department];
-                const values2 = [parseInt(levelTerm.batch), `${section}2`, 1, session, levelTerm.level_term, levelTerm.department];
-    
                 await client.query(query, values);
-                await client.query(query, values1);
-                await client.query(query, values2);
+                for(let j = 1; j <= subsection_count_per_section; j++){
+                    const values2 = [parseInt(levelTerm.batch), `${section}${j}`, 1, session, levelTerm.level_term, levelTerm.department];
+                    await client.query(query, values2);
+                }
             }
         }
         await client.query("COMMIT");
@@ -150,10 +210,10 @@ async function initializeSectionsTable(levelTerms, session){
     } finally {
         client.release();
     }
-    
+
 }
 
-async function getAllActiveCourses(levelTerms, session){
+async function getAllActiveCourses(levelTerms, session) {
     const activeLevelTerms = levelTerms.filter((levelTerm) => levelTerm.active);
     const query = `
         select ac.*
@@ -162,16 +222,27 @@ async function getAllActiveCourses(levelTerms, session){
         on ac.level_term = ltu.level_term and ac."to" = ltu.department
         where ltu.level_term = $1 and ltu.department = $2;
     `;
+    const section_count_query = `
+        select section_count
+        from section_count
+        where batch = $1 and department = $2;
+    `;
     const client = await connect();
     let activeCourses = [];
-    for(const levelTerm of activeLevelTerms){
+    for (const levelTerm of activeLevelTerms) {
         const values = [levelTerm.level_term, levelTerm.department];
         const result = await client.query(query, values);
+        const section_count_values = [parseInt(levelTerm.batch), levelTerm.department];
+        const section_count_result = await client.query(section_count_query, section_count_values);
+        if (section_count_result.rows.length === 0) {
+            throw new HttpError(404, `Section count not found for batch ${levelTerm.batch} and department ${levelTerm.department}`);
+        }
+        const levelTermSectionCount = parseInt(section_count_result.rows[0].section_count);
         const courses = result.rows.map((c) => {
             return {
                 ...c,
                 session: session,
-                teacher_credit: c.class_per_week * levelTerm.section_count
+                teacher_credit: c.class_per_week * levelTermSectionCount
             }
         });
         activeCourses = activeCourses.concat(courses);
@@ -180,7 +251,7 @@ async function getAllActiveCourses(levelTerms, session){
     return activeCourses;
 }
 
-async function initializeCoursesTable(activeCourses){
+async function initializeCoursesTable(activeCourses) {
     const query = `
         INSERT INTO courses (course_id, session, "name", "type", class_per_week, "from", "to", teacher_credit, level_term) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
     `;
@@ -192,7 +263,7 @@ async function initializeCoursesTable(activeCourses){
     try {
         await client.query("BEGIN");
         console.log(activeCourses);
-        for(const course of activeCourses){
+        for (const course of activeCourses) {
             const values = [course.course_id, course.session, course.name, course.type, course.class_per_week, course.from, course.to, course.teacher_credit, course.level_term];
             await client.query(query, values);
         }
@@ -206,10 +277,10 @@ async function initializeCoursesTable(activeCourses){
     }
 }
 
-async function initializeCoursesSectionsTable(){
+async function initializeCoursesSectionsTable() {
     const query = `
-        INSERT INTO courses_sections (course_id, session, batch, section, room_no, department)
-        SELECT c.course_id, c.session, s.batch, s.section, s.room, s.department
+        INSERT INTO courses_sections (course_id, session, batch, section, department)
+        SELECT c.course_id, c.session, s.batch, s.section, s.department
         FROM courses c
         JOIN sections s 
         ON c.level_term = s.level_term AND c.type = s.type AND c."to" = s.department;
@@ -227,7 +298,7 @@ async function initializeCoursesSectionsTable(){
     }
 }
 
-export async function initiateDB(levelTerms){
+export async function initiateDB(levelTerms) {
     await clearTables();
     console.log("Database tables cleared");
 
@@ -242,8 +313,8 @@ export async function initiateDB(levelTerms){
 
     await initializeCoursesTable(activeCourses);
     console.log("Courses table initialized");
-    
+
     await initializeCoursesSectionsTable();
     console.log("Courses_Sections table initialized");
-    
+
 }

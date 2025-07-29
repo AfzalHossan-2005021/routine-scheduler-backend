@@ -1,24 +1,61 @@
 import { connect } from "../config/database.js";
+import { getTheoryTeacherAssignmentDB } from "../assignment/repository.js";
 
-export async function getTheorySchedule(batch, section) {
+/**
+ * Get schedule configuration values (times, days, possibleLabTimes)
+ * @returns {Object} Schedule configuration values
+ */
+export async function getScheduleConfigs() {
+  const client = await connect();
+  try {
+    // Get all schedule-related config values
+    const query = `
+      SELECT key, value
+      FROM configs
+      WHERE key IN ('times', 'days', 'possibleLabTimes')
+    `;
+    const results = await client.query(query);
+    
+    // Process the results
+    const configs = {};
+    for (const row of results.rows) {
+      try {
+        configs[row.key] = JSON.parse(row.value);
+      } catch (e) {
+        configs[row.key] = row.value;
+      }
+    }
+    
+    // Set defaults if not found
+    if (!configs.times) configs.times = [8, 9, 10, 11, 12, 1, 2, 3, 4];
+    if (!configs.days) configs.days = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"];
+    if (!configs.possibleLabTimes) configs.possibleLabTimes = [8, 11, 2];
+    
+    return configs;
+  } finally {
+    client.release();
+  }
+}
+
+export async function getTheorySchedule(department, batch, section) {
   // This query gets schedules for both the main section and any subsections
   const query = `
     SELECT course_id, c.type, "day", "time", department, "section"
     FROM schedule_assignment sa
     NATURAL JOIN courses c
-    WHERE batch = $1 AND ("section" = $2 OR "section" LIKE $3)
+    WHERE department = $1 AND batch = $2 AND ("section" = $3 OR "section" LIKE $4)
     AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
     ORDER BY "section"
   `;
-  const values = [batch, section, `${section}%`];
+  const values = [department, batch, section, `${section}%`];
   const client = await connect();
   const results = await client.query(query, values);
   client.release();
-  
+
   // Organize results with subsections grouped under their main section
   const mainSectionSchedules = results.rows.filter(row => row.section === section);
   const subsectionSchedules = {};
-  
+
   // Group subsection schedules
   results.rows.forEach(row => {
     if (row.section !== section) {
@@ -28,7 +65,7 @@ export async function getTheorySchedule(batch, section) {
       subsectionSchedules[row.section].push(row);
     }
   });
-  
+
   return {
     mainSection: mainSectionSchedules,
     subsections: subsectionSchedules
@@ -36,34 +73,42 @@ export async function getTheorySchedule(batch, section) {
 }
 
 export async function setTheorySchedule(batch, section, course, schedule) {
-  const query = `INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department) VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6)`;
-  const removeCourses = `DELETE FROM schedule_assignment WHERE batch = $1 and "section" = $2 and course_id = $3 AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
-  console.log(batch, section, course);
-  
-  const getQuery = `
-    SELECT "to"
-    FROM courses
-    WHERE course_id = $1
-  `;
-  const getValues = [course];
+  // Accepts: batch (int), section (string), course (string or empty), schedule (array of {day, time})
   const client = await connect();
-  const result = await client.query(getQuery, getValues);
-  console.log(result.rows);
-  
-  const department = result.rows[0].to;
   try {
     await client.query("BEGIN");
-    await client.query(removeCourses, [batch, section, course]);
+    const deleteQuery = `
+      DELETE FROM schedule_assignment
+      WHERE batch = $1
+      AND "section" = $2
+      AND "day" = $3
+      AND "time" = $4
+      AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
     for (const slot of schedule) {
-      const values = [batch, section, course, slot.day, slot.time, department];
-      await client.query(query, values);
+      await client.query(deleteQuery, [batch, section, slot.day, slot.time]);
+    }
+    if (course === "None" || course === "") {
+      // Do nothing
+    } else {
+      // Insert each slot in schedule
+      for (const slot of schedule) {
+        // Insert new slot
+        const getDeptQuery = `SELECT "to" FROM courses WHERE course_id = $1`;
+        const deptResult = await client.query(getDeptQuery, [course]);
+        const department = deptResult.rows[0].to;
+        const teacherAssignments = await getTheoryTeacherAssignmentDB(course, section);
+        const insertQuery = `
+          INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department, room_no, teachers)
+          VALUES ($1, $2::varchar, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6::varchar, (SELECT room FROM sections WHERE batch = $1 AND section = $2::varchar AND department = $6::varchar), $7)
+        `;
+        await client.query(insertQuery, [batch, section, course, slot.day, slot.time, department, teacherAssignments]);
+      }
     }
     await client.query("COMMIT");
     return true;
   } catch (e) {
-    console.log(e);
     await client.query("ROLLBACK");
-    return false;
+    throw e;
   } finally {
     client.release();
   }
@@ -85,31 +130,55 @@ export async function getSessionalSchedule(batch, section) {
 }
 
 export async function setSessionalSchedule(batch, section, department, schedule) {
-  const query = `INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department) VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6)`;
-  const removeCourses = `DELETE FROM schedule_assignment WHERE batch = $1 and "section" = $2 AND department = $3 AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')`;
-
+  console.log(batch, section, department, schedule);
   const client = await connect();
   try {
     await client.query("BEGIN");
-
-    await client.query(removeCourses, [batch, section, department]);
-    for (const slot of schedule) {
-      const getQuery2 = `
-        SELECT "to"
-        FROM courses
-        WHERE course_id = $1
+    const course_id_query = `
+      SELECT course_id
+      FROM schedule_assignment
+      WHERE batch = $1
+      AND "section" = $2 
+      AND department = $3
+      AND "day" = $4
+      AND "time" = $5
+    `;
+    const db_courses = (await client.query(course_id_query, [batch, section, department, schedule.day, schedule.time])).rows;
+    if(db_courses.length === 0) {
+      const insert_query = `
+        INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department)
+        VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6)
       `;
-      let dept = await client.query(getQuery2, [slot.course_id])
-      dept = dept.rows[0].to;
-      const values = [batch, section, slot.course_id, slot.day, slot.time, dept];
-      await client.query(query, values);
+      await client.query(insert_query, [batch, section, schedule.course_id, schedule.day, schedule.time, department]);
+    } else {
+      if(schedule.course_id === "None") {
+        const delete_query = `
+          DELETE FROM schedule_assignment
+          WHERE batch = $1
+          AND "section" = $2
+          AND department = $3
+          AND "day" = $4
+          AND "time" = $5
+        `;
+        await client.query(delete_query, [batch, section, department, schedule.day, schedule.time]);
+      } else {
+        const update_query = `
+          UPDATE schedule_assignment
+          SET course_id = $1
+          WHERE batch = $2
+          AND "section" = $3
+          AND department = $4
+          AND "day" = $5
+          AND "time" = $6
+        `;
+        await client.query(update_query, [schedule.course_id, batch, section, department, schedule.day, schedule.time]);
+      }
     }
     await client.query("COMMIT");
     return true;
   } catch (e) {
-    console.log(e);
     await client.query("ROLLBACK");
-    return false;
+    throw e;
   } finally {
     client.release();
   }
@@ -160,9 +229,9 @@ export async function getAllScheduleDB() {
   return results;
 }
 
-export async function getDepartmentalSessionalSchedule(){
+export async function getDepartmentalSessionalSchedule() {
   const query = `
-    SELECT course_id, batch, "section", "day", "time"
+    SELECT course_id, batch, "section", "day", "time", department
     FROM schedule_assignment
     WHERE course_id LIKe 'CSE%'
     AND LENGTH("section") = 2
@@ -222,15 +291,15 @@ export async function teacherContradictionDB(batch, section, course_id) {
 
 export async function ensureEmailTemplateExists(type) {
   const client = await connect();
-  
+
   try {
     // Check if the template exists
     const checkQuery = "SELECT * FROM configs WHERE key= $1";
     const checkResult = await client.query(checkQuery);
-    
+
     // If the template doesn't exist or has no value, create it
     if (checkResult.rows.length === 0) {
-      if(type == "SCHEDULE_EMAIL") {
+      if (type == "SCHEDULE_EMAIL") {
         const insertQuery = "INSERT INTO configs (key, value) VALUES ('SCHEDULE_EMAIL', 'Please fill out your theory schedule preferences. Click the link below to access the form.')";
         await client.query(insertQuery);
       } else if (type == "THEORY_EMAIL") {
@@ -244,7 +313,7 @@ export async function ensureEmailTemplateExists(type) {
       }
       return true;
     } else if (!checkResult.rows[0].value) {
-      if(type == "SCHEDULE_EMAIL") {
+      if (type == "SCHEDULE_EMAIL") {
         const updateQuery = "UPDATE configs SET value = 'Please fill out your theory schedule preferences. Click the link below to access the form.' WHERE key = 'SCHEDULE_EMAIL'";
         await client.query(updateQuery);
       } else if (type == "THEORY_EMAIL") {
@@ -268,15 +337,16 @@ export async function ensureEmailTemplateExists(type) {
   }
 }
 
-export async function getCourseAllSchedule(course_id) {
+export async function getCourseAllSchedule(initial, course_id) {
   const query = `
-    SELECT course_id, "day", "time"
+    SELECT course_id, "day", "time", section
     FROM schedule_assignment
     WHERE course_id = $1
+    AND $2 = ANY(teachers)
     AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
   `;
   const client = await connect();
-  const results = await client.query(query, [course_id]);
+  const results = await client.query(query, [course_id, initial]);
   client.release();
   return results.rows;
 }

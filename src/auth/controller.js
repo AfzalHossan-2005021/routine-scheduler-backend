@@ -15,7 +15,6 @@ const saltRounds = 10;
 export async function authenticate(req, res, next) {
   try {
     const admin = await findAdminUsingUsername(req.body.username);
-    console.log(admin);
     const result = await bcrypt.compare(req.body.password, admin.password);
 
     if (result) {
@@ -45,18 +44,26 @@ export async function forgetPassReq(req, res, next) {
 }
 
 export async function register(req, res, next) {
-  var username = req.body.username;
-  var password = req.body.password;
-  var email = req.body.email;
+  const username = req.body.username;
+  const password = req.body.password;
+  const email = req.body.email;
 
   try {
     const hash = await bcrypt.hash(password, saltRounds);
-    await registerAdminDB(username, hash, email);
-    res.status(201).json({
-      message: "registration successfull!",
-      username: admin.username,
-      email: admin.email,
-    });
+    if (await adminExistsEmail(email)) {
+      throw new HttpError(400, "Email already exists!");
+    }
+    const result = await registerAdminDB(username, hash, email);
+    if (result) {
+      const token = jwt.sign({ username }, secret, {
+        expiresIn: "2 days",
+      });
+      res.status(201).json({
+        success: true,
+        user: { username, email },
+        token: token
+      });
+    }
   } catch (error) {
     next(error);
   }

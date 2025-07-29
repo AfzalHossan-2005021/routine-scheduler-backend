@@ -5,7 +5,9 @@ import {
   removeCourse,
   getAllLab,
   getNonDeptLabs,
-  getSessionalCoursesByDeptLevelTerm
+  getNonDeptTheories,
+  getSessionalCoursesByDeptLevelTerm,
+  getTheoryCoursesByDeptLevelTerm
 } from "./repository.js";
 
 export async function getAllCourse(req, res, next) {
@@ -46,6 +48,9 @@ export async function addCourse(req, res, next) {
 
   try {
     const rowCount = await saveCourse(Course);
+    if (rowCount <= 0) {
+      return res.status(400).json({ message: "Save Failed" });
+    }
     res.status(200).json({ message: "Successfully Saved" });
   } catch (err) {
     next(err);
@@ -84,7 +89,10 @@ export async function editCourse(req, res, next) {
 
   try {
     const rowCount = await updateCourse(Course);
-    res.status(200).json({ Course: Course });
+    if (rowCount <= 0) {
+      return res.status(400).json({ message: "Update Failed" });
+    }
+    res.status(200).json({ message: "Successfully Updated" });
   } catch (err) {
     next(err);
   }
@@ -94,7 +102,10 @@ export async function deleteCourse(req, res, next) {
   const course_id = req.params["course_id"];
   try {
     const rowCount = await removeCourse(course_id);
-    res.status(200).json({ row: rowCount });
+    if (rowCount <= 0) {
+      return res.status(400).json({ message: "Delete Failed" });
+    }
+    res.status(200).json({ message: "Successfully Deleted" });
   } catch (err) {
     next(err);
   }
@@ -118,6 +129,15 @@ export async function getNonDeptLabCourses(req, res, next) {
   }
 }
 
+export async function getNonDeptTheoryCourses(req, res, next) {
+  try {
+    const Courses = await getNonDeptTheories();
+    res.status(200).json(Courses);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function getSessionalCoursesByDeptLevelTermAPI(req, res, next) {
   const department = req.params["department"];
   const level_term = req.params["level_term"];
@@ -129,3 +149,15 @@ export async function getSessionalCoursesByDeptLevelTermAPI(req, res, next) {
     next(err);
   }
 }
+
+export async function getTheoryCoursesByDeptLevelTermAPI(req, res, next) {
+  const department = req.params["department"];
+  const level_term = req.params["level_term"];
+
+  try {
+    const Courses = await getTheoryCoursesByDeptLevelTerm(department, level_term);
+    res.status(200).json({ message: "Theory courses successfully Fetched", data: Courses });
+  } catch (err) {
+    next(err);
+  }
+} 

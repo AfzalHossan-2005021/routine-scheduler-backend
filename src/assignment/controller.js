@@ -5,6 +5,8 @@ import {
   getAllTeacherMail,
   createForm,
   getTheoryPreferencesStatus,
+  getTheoryAssignStatus,
+  setTheoryAssignStatus,
   finalize,
   isFinalized,
   getTheoryAssignment,
@@ -17,12 +19,21 @@ import {
   isSessionalFinalized,
   getSessionalAssignment,
   getTeacherSessionalAssignment,
+  deleteTeacherSessionalAssignmentDB,
   getSessionalTeachers,
   getAllSessionalAssignment,
   setTeacherAssignmentDB,
   setTeacherSessionalAssignmentDB,
   getTeacherMailByInitial,
-  saveReorderedTeacherPreferenceDB
+  saveReorderedTeacherPreferenceDB,
+  getAllTheoryTeacherAssignmentDB,
+  getTheoryTeacherAssignmentDB,
+  calculateTeacherTotalCredit,
+  calculateAllTeachersCredits,
+  addTheoryTeacherAssignmentDB,
+  deleteTheoryTeacherAssignmentDB,
+  getTheoryDistributionDB,
+  getSessionalDistributionDB,
 } from "./repository.js";
 import { HttpError } from "../config/error-handle.js";
 
@@ -72,24 +83,35 @@ export async function sendTheoryPrefMail(req, res, next) {
 export async function getCurrStatus(req, res, next) {
   try {
     const result = await getTheoryPreferencesStatus();
-    if (result.length === 0) {
+    const status = await getTheoryAssignStatus();
+    if (status === 0) {
       res.status(200).json({ status: 0 });
     } else {
       const nullResponse = result.filter((row) => row.response === null);
       const otherResponse = result.filter((row) => row.response !== null);
-      if (await isFinalized())
-        res.status(200).json({
-          status: 3,
-          values: nullResponse,
-          submitted: otherResponse,
-          assignment: await getTheoryAssignment(),
-        });
-      else
-        res.status(200).json({
-          status: nullResponse.length === 0 ? 2 : 1,
-          values: nullResponse,
-          submitted: otherResponse,
-        });
+      res.status(200).json({
+        status: status,
+        values: nullResponse,
+        submitted: otherResponse,
+        assignment: await getTheoryAssignment(),
+      });
+    }
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function setCurrStatus(req, res, next) {
+  try {
+    const { status } = req.body;
+    if (status < 0 || status > 3) {
+      throw new HttpError(400, "Invalid status value");
+    }
+    const result = await setTheoryAssignStatus(status);
+    if (result) {
+      res.status(200).json({ msg: "Status updated successfully" });
+    } else {
+      throw new HttpError(500, "Failed to update status");
     }
   } catch (err) {
     next(err);
@@ -296,6 +318,22 @@ export async function setTeacherSessionalAssignment(req, res, next){
   }
 }
 
+export async function deleteTeacherSessionalAssignmentAPI(req, res, next) {
+  const { initial, course_id, batch, section } = req.body;
+  try {
+    const success = await deleteTeacherSessionalAssignmentDB(initial, course_id, batch, section);
+    if (!success) {
+      throw new HttpError(404, "Teacher sessional assignment not found");
+    }
+    res.status(200).json({ 
+      success: true, 
+      message: "Sessional assignment deleted successfully"
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -332,6 +370,89 @@ export async function resendSessionalPrefMail(req, res, next) {
     const email = await getTeacherMailByInitial(initial);
     await resendFormMailHandler({ initial, email, type: 'sessional-pref' });
     res.status(200).json({ msg: 'Sessional preference mail resent successfully' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getAllTheoryTeacherAssignment(req, res, next) {
+  try {
+    const result = await getAllTheoryTeacherAssignmentDB();
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getTheoryTeacherAssignment(req, res, next) {
+  const { course_id, section } = req.params;
+  console.log(req.params)
+  try {
+    const result = await getTheoryTeacherAssignmentDB(course_id, section);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function addTheoryTeacherAssignment(req, res, next) {
+  const { course_id, section, initial } = req.body;
+  try {
+    const result = await addTheoryTeacherAssignmentDB(course_id, section, initial);
+    if (!result) {
+      throw new HttpError(400, "Failed to add theory teacher assignment");
+    }
+    res.status(200).json({ message: "Theory teacher assignment added successfully" });
+  } catch (err) {
+    next(err);
+  }
+}
+export async function deleteTheoryTeacherAssignment(req, res, next) {
+  const { course_id, section, initial } = req.params;
+  try {
+    const result = await deleteTheoryTeacherAssignmentDB(course_id, section, initial);
+    if (!result) {
+      throw new HttpError(400, "Failed to delete theory teacher assignment");
+    }
+    res.status(200).json({ message: "Theory teacher assignment deleted successfully" });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getTeacherTotalCreditAPI(req, res, next) {
+  const { initial } = req.params;
+  
+  try {
+    const result = await calculateTeacherTotalCredit(initial);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getAllTeachersCreditAPI(req, res, next) {
+  try {
+    const result = await calculateAllTeachersCredits();
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getTheoryDistributionAPI(req, res, next) {
+  try {
+    const result = await getTheoryDistributionDB();
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getSessionalDistributionAPI(req, res, next) {
+  try {
+    const result = await getSessionalDistributionDB();
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }

@@ -1,6 +1,7 @@
 import { resend } from "../config/mail.js";
 import { v4 as uuidv4 } from "uuid";
 import {
+  getScheduleConfigs,
   getTheorySchedule,
   setTheorySchedule,
   getTheoryScheduleForms,
@@ -18,6 +19,18 @@ import {
 } from "./repository.js";
 import { createForm, getTemplate } from "../assignment/repository.js";
 import { HttpError } from "../config/error-handle.js";
+
+/**
+ * Get schedule configuration values
+ */
+export async function getScheduleConfigValues(req, res, next) {
+  try {
+    const configs = await getScheduleConfigs();
+    res.json({ success: true, data: configs });
+  } catch (err) {
+    next(err);
+  }
+}
 
 async function sendMail(initial, email, template, token) {
   var url = process.env.URL || "http://localhost:3000";
@@ -53,10 +66,10 @@ export async function setTheoryScheduleAPI(req, res, next) {
 
 export async function getTheoryScheduleAPI(req, res, next) {
   try {
-    let { batch, section } = req.params;
+    let { department, batch, section } = req.params;
     batch = parseInt(batch);
 
-    const result = await getTheorySchedule(batch, section);
+    const result = await getTheorySchedule(department, batch, section);
 
     res.status(200).json(result);
   } catch (e) {
@@ -87,8 +100,10 @@ export async function getDepartmentalSessionalScheduleAPI(req, res, next) {
 export async function setSessionalScheduleAPI(req, res, next) {
   try {
     let { batch, section, department } = req.params;
+    console.log(req.params);
     batch = parseInt(batch);
     const schedule = req.body;
+    console.log("Setting sessional schedule:", batch, section, department, schedule);
     const ok = await setSessionalSchedule(batch, section, department, schedule);
     if (ok) res.status(200).json({ msg: "successfully send", body: schedule });
     else throw new HttpError(400, "Insert Failed");
@@ -215,8 +230,8 @@ export async function getAllSchedule(req, res, next) {
 
 export async function getCourseAllScheduleAPI(req, res, next) {
   try {
-    const { course_id } = req.params;
-    const result = await getCourseAllSchedule(course_id);
+    const { initial, course_id } = req.params;
+    const result = await getCourseAllSchedule(initial, course_id);
     res.status(200).json(result);
   } catch (err) {
     next(err);

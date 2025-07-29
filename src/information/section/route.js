@@ -1,13 +1,13 @@
 import express from 'express'
 const sectionRouter = express.Router();
-import {getAllSection,addSection,editSection,deleteSection,getSessionalSectionsByDeptLevelTermAPI} from "./controller.js"
+import {getAllSection,addSection,editSection,deleteSection,getSessionalSectionsByDeptLevelTermAPI,getTheorySectionsByDeptLevelTermAPI} from "./controller.js"
 import validate from "../../config/validation.js";
 import {body} from 'express-validator'
 
 
 sectionRouter.get("/",getAllSection)
 sectionRouter.get("/:department/:level_term",getSessionalSectionsByDeptLevelTermAPI)
-
+sectionRouter.get("/theory/:department/:level_term",getTheorySectionsByDeptLevelTermAPI)
 
 sectionRouter.post("/",validate([
     body('batch').isNumeric().notEmpty(),
