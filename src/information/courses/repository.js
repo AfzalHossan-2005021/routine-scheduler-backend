@@ -7,7 +7,7 @@ export async function getAll() {
       SELECT * 
       FROM all_courses
       WHERE course_id != 'CT'
-      ORDER BY "to", level_term, course_id
+      ORDER BY course_id
     `;
     const client = await connect();
     const courses = await client.query(query);
@@ -53,7 +53,7 @@ export async function saveCourse(Course) {
   const to = Course.to;
   const level_term = Course.level_term;
 
-  const query =`
+  const query = `
     INSERT INTO all_courses (course_id, name, type, class_per_week, \"from\", \"to\", level_term)
     VALUES ($1, $2, $3, $4, $5, $6, $7)
     ON CONFLICT (course_id, level_term) DO UPDATE
@@ -95,10 +95,19 @@ export async function updateCourse(Course) {
   try {
     const query = `
       UPDATE all_courses
-      SET course_id=$1, name=$2, type=$3, session=(SELECT value from configs where key = 'CURRENT_SESSION'), class_per_week=$4, \"from\" = $5, \"to\" = $6, level_term = $7
+      SET course_id=$1, name=$2, type=$3, class_per_week=$4, \"from\" = $5, \"to\" = $6, level_term = $7
       WHERE course_id=$8
     `;
-    const values = [course_id, name, type, class_per_week, from, to, level_term, course_id_old];
+    const values = [
+      course_id,
+      name,
+      type,
+      class_per_week,
+      from,
+      to,
+      level_term,
+      course_id_old,
+    ];
     const resultsIns = await client.query(query, values);
 
     if (resultsIns.rowCount <= 0) {
@@ -129,7 +138,7 @@ export async function removeCourse(course_id) {
 }
 
 export async function getAllLab() {
-  const query =`
+  const query = `
     SELECT cs.course_id, cs.section, cs.batch , c.name, s.level_term, s.department
     FROM courses_sections cs
     JOIN courses c ON cs.course_id = c.course_id
@@ -168,7 +177,10 @@ export async function getNonDeptTheories() {
   return results.rows;
 }
 
-export async function getSessionalCoursesByDeptLevelTerm(department, level_term) {
+export async function getSessionalCoursesByDeptLevelTerm(
+  department,
+  level_term
+) {
   const query = `
     SELECT course_id, name, class_per_week
     FROM courses
