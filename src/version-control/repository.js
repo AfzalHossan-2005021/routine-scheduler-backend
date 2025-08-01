@@ -86,3 +86,45 @@ export const deleteBackup = (filename) => {
         });
     });
 };
+
+export const getBackupPath = (filename) => {
+    return new Promise((resolve, reject) => {
+        const backupPath = path.join(backupDir, filename);
+        if (!fs.existsSync(backupPath)) {
+            const error = new Error('Version not found.');
+            error.statusCode = 404;
+            return reject(error);
+        }
+        resolve(backupPath);
+    });
+};
+
+export const saveUploadedBackup = (uploadedFilePath, versionName) => {
+    return new Promise((resolve, reject) => {
+        const filename = `${versionName}.dump`;
+        const backupPath = path.join(backupDir, filename);
+
+        if (fs.existsSync(backupPath)) {
+            const error = new Error(`Version '${versionName}' already exists.`);
+            error.statusCode = 409;
+            return reject(error);
+        }
+
+        // Copy the uploaded file to the backup directory instead of rename
+        fs.copyFile(uploadedFilePath, backupPath, (err) => {
+            if (err) {
+                // Clean up the temporary file
+                fs.unlink(uploadedFilePath, () => {});
+                return reject(err);
+            }
+            
+            // Remove the temporary file after successful copy
+            fs.unlink(uploadedFilePath, (unlinkErr) => {
+                if (unlinkErr) {
+                    console.warn('Failed to remove temporary file:', unlinkErr);
+                }
+                resolve();
+            });
+        });
+    });
+};
