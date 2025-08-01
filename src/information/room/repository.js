@@ -2,7 +2,7 @@ import { connect } from "../../config/database.js";
 import { HttpError } from "../../config/error-handle.js";
 
 export async function getAll() {
-  const query = "SELECT * FROM rooms";
+  const query = "SELECT * FROM rooms ORDER BY room";
 
   const client = await connect();
   const results = await client.query(query);
@@ -74,7 +74,8 @@ export async function removeRoom(room) {
 }
 
 export async function getLabs() {
-  const query = "SELECT * FROM rooms WHERE type = 1 AND room NOT LIKE '%(%)%' AND active = TRUE ";
+  const query =
+    "SELECT * FROM rooms WHERE type = 1 AND room NOT LIKE '%(%)%' AND active = TRUE ";
 
   const client = await connect();
   const results = await client.query(query);
@@ -83,8 +84,9 @@ export async function getLabs() {
   return results.rows;
 }
 
-export async function getNonDeptLabs(){
-  const query = "SELECT * FROM rooms  WHERE type = 1 AND room LIKE '%(%)%' AND active = TRUE ";
+export async function getNonDeptLabs() {
+  const query =
+    "SELECT * FROM rooms  WHERE type = 1 AND room LIKE '%(%)%' AND active = TRUE ";
 
   const client = await connect();
   const results = await client.query(query);
