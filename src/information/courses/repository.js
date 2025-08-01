@@ -139,7 +139,7 @@ export async function removeCourse(course_id) {
 
 export async function getAllLab() {
   const query = `
-    SELECT cs.course_id, cs.section, cs.batch , c.name, s.level_term, s.department
+    SELECT cs.course_id, cs.section, cs.batch , c.name, s.level_term, s.department, c.class_per_week
     FROM courses_sections cs
     JOIN courses c ON cs.course_id = c.course_id
     join sections s using (batch, section, department)
