@@ -16,22 +16,6 @@ export async function findAdminDB(username) {
 
 }
 
-export async function registerAdminDB(username, hash, email) {
-  const query = 'INSERT INTO admin (username, password, email) VALUES ($1, $2, $3)';
-  const values = [username, hash, email];
-
-  const client = await connect()
-  const results = await client.query(query, values)
-  client.release();
-
-  if (results.rowCount <= 0) {
-    throw new HttpError(400, "Insertion Failed");
-  } else {
-    return results.rows;
-  }
-
-}
-
 export async function updateEmailDB(email, username) {
   const query = 'UPDATE admin SET email = $1 WHERE username = $2';
   const values = [email, username];
@@ -54,4 +38,19 @@ export async function adminExistsEmail(email) {
   const client = await connect();
   const result = await client.query(query, values);
   return result.rows.length > 0;
+}
+
+export async function updatePasswordDB(username, newPassword) {
+  const query = 'UPDATE admin SET password = $1 WHERE username = $2';
+  const values = [newPassword, username];
+
+  const client = await connect()
+  const results = await client.query(query, values)
+  client.release();
+
+  if (results.rowCount <= 0) {
+    throw new HttpError(404, "User not found");
+  } else {
+    return results.rows;
+  }
 }
