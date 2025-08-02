@@ -3,7 +3,6 @@ import { HttpError } from "../config/error-handle.js";
 import { getTheoryTeacherAssignmentDB } from "../assignment/repository.js";
 
 async function getCourses(type) {
-
   const query = "SELECT value FROM configs WHERE key='CURRENT_SESSION'";
   const client = await connect();
   const results = await client.query(query);
@@ -11,20 +10,26 @@ async function getCourses(type) {
   client.release();
 
   if (type == "theory-pref") {
-    const query = `SELECT course_id, name
-        FROM courses
-        where type =0 and session = $1
-        `;
+    const query = `
+      SELECT course_id, name
+      FROM courses
+      where type =0 and session = $1
+      and course_id like 'CSE%'
+      ORDER BY course_id
+      `;
     const values = [current_session];
     const client = await connect();
     const results = await client.query(query, values);
     client.release();
     return results.rows;
   } else if (type == "sessional-pref") {
-    const query = `SELECT course_id, name
-        FROM courses
-        where type =1 and session = $1
-        `;
+    const query = `
+      SELECT course_id, name
+      FROM courses
+      where type =1 and session = $1
+      and course_id like 'CSE%'
+      ORDER BY course_id
+      `;
     const values = [current_session];
     const client = await connect();
     const results = await client.query(query, values);
@@ -50,14 +55,16 @@ export async function getPreferenceForm(initial, type) {
   if (results.rows.length <= 0) {
     throw new HttpError(404, "Form not found");
   }
-  
+
   const allCourses = await getCourses(type);
-  const courses = allCourses.filter((course) => course.course_id.startsWith("CSE"));
+  const courses = allCourses.filter((course) =>
+    course.course_id.startsWith("CSE")
+  );
   const data = {
     teacher: results.rows[0],
     courses: courses,
   };
-  
+
   return data;
 }
 
@@ -107,18 +114,29 @@ export async function saveTheoryScheduleForm(initial, response) {
   `;
   const client = await connect();
   let results = await client.query(query, [initial]);
-  const {course_id, dept, batch} = results.rows[0];
+  const { course_id, dept, batch } = results.rows[0];
 
   let schedulePref = JSON.parse(response);
-  
+
   schedulePref.forEach((row) => {
-    const teacherAssignments = getTheoryTeacherAssignmentDB(course_id, row.section);
+    const teacherAssignments = getTheoryTeacherAssignmentDB(
+      course_id,
+      row.section
+    );
     const query = `
       INSERT INTO schedule_assignment (course_id, session, batch, section, day, time, department, room_no, teachers) 
       VALUES ($1, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $2, $3, $4, $5, $6, (SELECT room FROM sections WHERE batch = $2 AND section = $3 AND department = $6), $7) 
       ON CONFLICT DO NOTHING
     `;
-    const values = [course_id, row.batch, row.section, row.day, row.time, dept, teacherAssignments];
+    const values = [
+      course_id,
+      row.batch,
+      row.section,
+      row.day,
+      row.time,
+      dept,
+      teacherAssignments,
+    ];
     client.query(query, values);
   });
   client.release();

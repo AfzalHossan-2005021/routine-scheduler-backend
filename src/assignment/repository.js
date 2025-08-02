@@ -82,14 +82,20 @@ export async function getTheoryPreferencesStatus() {
           // Try to handle comma-separated string format: "CSE103","CSE109","CSE101"
           try {
             // Remove quotes and split by comma, then trim each item
-            const commaSeparated = row.response.replace(/"/g, '').split(',').map(item => item.trim());
-            if (commaSeparated.length > 0 && commaSeparated[0] !== '') {
+            const commaSeparated = row.response
+              .replace(/"/g, "")
+              .split(",")
+              .map((item) => item.trim());
+            if (commaSeparated.length > 0 && commaSeparated[0] !== "") {
               parsedResponse = commaSeparated;
             } else {
               parsedResponse = null;
             }
           } catch (fallbackError) {
-            console.error(`Fallback parsing also failed for teacher ${row.initial}:`, fallbackError.message);
+            console.error(
+              `Fallback parsing also failed for teacher ${row.initial}:`,
+              fallbackError.message
+            );
             parsedResponse = null;
           }
         }
@@ -204,21 +210,33 @@ export async function finalize() {
       try {
         courses = JSON.parse(row.response);
       } catch (error) {
-        console.error(`Failed to parse JSON response for teacher ${row.initial}:`, error.message);
+        console.error(
+          `Failed to parse JSON response for teacher ${row.initial}:`,
+          error.message
+        );
         console.error(`Invalid JSON content: ${row.response}`);
 
         // Try to handle comma-separated string format: "CSE103","CSE109","CSE101"
         try {
           // Remove quotes and split by comma, then trim each item
-          const commaSeparated = row.response.replace(/"/g, '').split(',').map(item => item.trim());
-          if (commaSeparated.length > 0 && commaSeparated[0] !== '') {
+          const commaSeparated = row.response
+            .replace(/"/g, "")
+            .split(",")
+            .map((item) => item.trim());
+          if (commaSeparated.length > 0 && commaSeparated[0] !== "") {
             courses = commaSeparated;
-            console.log(`Successfully parsed comma-separated format for teacher ${row.initial}:`, courses);
+            console.log(
+              `Successfully parsed comma-separated format for teacher ${row.initial}:`,
+              courses
+            );
           } else {
             continue; // Skip this teacher's record
           }
         } catch (fallbackError) {
-          console.error(`Fallback parsing also failed for teacher ${row.initial}:`, fallbackError.message);
+          console.error(
+            `Fallback parsing also failed for teacher ${row.initial}:`,
+            fallbackError.message
+          );
           continue; // Skip this teacher's record
         }
       }
@@ -240,7 +258,9 @@ export async function finalize() {
 
           // Skip if course doesn't exist in current session
           if (checkResult.rows.length === 0) {
-            console.log(`Skipping course ${course_id} for teacher ${initial} - not found in courses for current session`);
+            console.log(
+              `Skipping course ${course_id} for teacher ${initial} - not found in courses for current session`
+            );
             continue;
           }
 
@@ -250,7 +270,7 @@ export async function finalize() {
                     `;
           const values = [initial, course_id];
           await client.query(query, values);
-          
+
           const updateQuery = `
             UPDATE courses_sections
             SET teachers = teachers || $1
@@ -271,7 +291,9 @@ export async function finalize() {
 
           if (noOfTeachersResults[course_id] !== undefined)
             noOfTeachersResults[course_id]--;
-          console.log(`teacher: ${initial} course: ${course_id} no: ${noOfTeachersResults[course_id]}`);
+          console.log(
+            `teacher: ${initial} course: ${course_id} no: ${noOfTeachersResults[course_id]}`
+          );
 
           theoryCourses--;
           if (theoryCourses <= 0) {
@@ -282,7 +304,6 @@ export async function finalize() {
       }
     }
     console.log(noOfTeachersResults);
-
 
     await client.query("COMMIT");
   } catch (e) {
@@ -296,7 +317,26 @@ export async function finalize() {
 }
 
 export async function getTheoryAssignment() {
-  const query = `select c.course_id, c."name", (select to_json(array_agg(row_to_json(t))) "teachers" from (select t.initial, t.name from teacher_assignment ta natural join teachers t where ta.course_id = c.course_id and ta.session = c."session") t ) from courses c where c.course_id like 'CSE%' and c.type = 0 order by c.course_id`;
+  const query = `
+    SELECT 
+      c.course_id, 
+      c."name", 
+      COUNT(cs.section) AS section_count,
+      (
+        SELECT to_json(array_agg(row_to_json(t))) AS teachers
+        FROM (
+          SELECT t.initial, t.name 
+          FROM teacher_assignment ta 
+          NATURAL JOIN teachers t 
+          WHERE ta.course_id = c.course_id
+        ) t
+      )
+    FROM courses c
+    LEFT JOIN courses_sections cs ON c.course_id = cs.course_id
+    WHERE c.course_id LIKE 'CSE%' AND c.type = 0
+    GROUP BY c.course_id, c."name"
+    ORDER BY c.course_id;
+    `;
 
   const client = await connect();
   const result = (await client.query(query)).rows;
@@ -339,7 +379,11 @@ export async function getTheoryTeacherAssignmentDB(course_id, section) {
   return result.rows.length > 0 ? result.rows[0].teachers : [];
 }
 
-export async function addTheoryTeacherAssignmentDB(course_id, section, initial) {
+export async function addTheoryTeacherAssignmentDB(
+  course_id,
+  section,
+  initial
+) {
   const client = await connect();
   try {
     const insertQuery = `
@@ -364,7 +408,11 @@ export async function addTheoryTeacherAssignmentDB(course_id, section, initial) 
   return true;
 }
 
-export async function deleteTheoryTeacherAssignmentDB(course_id, section, initial) {
+export async function deleteTheoryTeacherAssignmentDB(
+  course_id,
+  section,
+  initial
+) {
   const client = await connect();
   try {
     const deleteQuery = `
@@ -458,21 +506,33 @@ export async function getSessionalPreferencesStatus() {
         try {
           parsedResponse = JSON.parse(row.response);
         } catch (error) {
-          console.error(`Failed to parse JSON response for teacher ${row.initial}:`, error.message);
+          console.error(
+            `Failed to parse JSON response for teacher ${row.initial}:`,
+            error.message
+          );
           console.error(`Invalid JSON content: ${row.response}`);
 
           // Try to handle comma-separated string format: "CSE103","CSE109","CSE101"
           try {
             // Remove quotes and split by comma, then trim each item
-            const commaSeparated = row.response.replace(/"/g, '').split(',').map(item => item.trim());
-            if (commaSeparated.length > 0 && commaSeparated[0] !== '') {
+            const commaSeparated = row.response
+              .replace(/"/g, "")
+              .split(",")
+              .map((item) => item.trim());
+            if (commaSeparated.length > 0 && commaSeparated[0] !== "") {
               parsedResponse = commaSeparated;
-              console.log(`Successfully parsed comma-separated format for teacher ${row.initial}:`, parsedResponse);
+              console.log(
+                `Successfully parsed comma-separated format for teacher ${row.initial}:`,
+                parsedResponse
+              );
             } else {
               parsedResponse = null;
             }
           } catch (fallbackError) {
-            console.error(`Fallback parsing also failed for teacher ${row.initial}:`, fallbackError.message);
+            console.error(
+              `Fallback parsing also failed for teacher ${row.initial}:`,
+              fallbackError.message
+            );
             parsedResponse = null;
           }
         }
@@ -597,14 +657,20 @@ export async function finalizeSessional() {
           )
           .flat();
       } catch (error) {
-        console.error(`Failed to parse JSON response for teacher ${row.initial}:`, error.message);
+        console.error(
+          `Failed to parse JSON response for teacher ${row.initial}:`,
+          error.message
+        );
         console.error(`Invalid JSON content: ${row.response}`);
 
         // Try to handle comma-separated string format: "CSE103","CSE109","CSE101"
         try {
           // Remove quotes and split by comma, then trim each item
-          const commaSeparated = row.response.replace(/"/g, '').split(',').map(item => item.trim());
-          if (commaSeparated.length > 0 && commaSeparated[0] !== '') {
+          const commaSeparated = row.response
+            .replace(/"/g, "")
+            .split(",")
+            .map((item) => item.trim());
+          if (commaSeparated.length > 0 && commaSeparated[0] !== "") {
             courses = commaSeparated
               .map((course_id) =>
                 teacherPerCourse
@@ -616,12 +682,18 @@ export async function finalizeSessional() {
                   .flat()
               )
               .flat();
-            console.log(`Successfully parsed comma-separated format for teacher ${row.initial}:`, commaSeparated);
+            console.log(
+              `Successfully parsed comma-separated format for teacher ${row.initial}:`,
+              commaSeparated
+            );
           } else {
             courses = []; // Set empty array on parse error
           }
         } catch (fallbackError) {
-          console.error(`Fallback parsing also failed for teacher ${row.initial}:`, fallbackError.message);
+          console.error(
+            `Fallback parsing also failed for teacher ${row.initial}:`,
+            fallbackError.message
+          );
           courses = []; // Set empty array on parse error
         }
       }
@@ -732,7 +804,10 @@ export async function saveReorderedTeacherPreferenceDB(initial, response) {
       WHERE initial = $2 AND type = 'theory-pref'
     `;
 
-    const result = await client.query(query, [JSON.stringify(response), initial]);
+    const result = await client.query(query, [
+      JSON.stringify(response),
+      initial,
+    ]);
     return result.rowCount > 0;
   } finally {
     client.release();
@@ -742,10 +817,17 @@ export async function saveReorderedTeacherPreferenceDB(initial, response) {
 export async function setTeacherAssignmentDB(assignment) {
   const client = await connect();
   try {
-    if ((assignment.initial === "None" || assignment.initial === null) && (assignment.old_initial === "None" || assignment.old_initial === null)) {
+    if (
+      (assignment.initial === "None" || assignment.initial === null) &&
+      (assignment.old_initial === "None" || assignment.old_initial === null)
+    ) {
       return;
     }
-    if (assignment.initial === "None" || assignment.initial === undefined || assignment.initial === null) {
+    if (
+      assignment.initial === "None" ||
+      assignment.initial === undefined ||
+      assignment.initial === null
+    ) {
       const deleteQuery = `
         DELETE FROM teacher_assignment
         WHERE course_id = $1 AND initial = $2 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
@@ -759,7 +841,10 @@ export async function setTeacherAssignmentDB(assignment) {
         WHERE course_id = $2 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
           AND $1 = ANY(teachers);
       `;
-      const sectionUpdateValues = [assignment.old_initial, assignment.course_id];
+      const sectionUpdateValues = [
+        assignment.old_initial,
+        assignment.course_id,
+      ];
       await client.query(sectionUpdateQuery, sectionUpdateValues);
 
       const scheduleUpdateQuery = `
@@ -769,7 +854,11 @@ export async function setTeacherAssignmentDB(assignment) {
           AND $1 = ANY(teachers);
       `;
       await client.query(scheduleUpdateQuery, sectionUpdateValues);
-    } else if (assignment.old_initial === "None" || assignment.old_initial === undefined || assignment.old_initial === null) {
+    } else if (
+      assignment.old_initial === "None" ||
+      assignment.old_initial === undefined ||
+      assignment.old_initial === null
+    ) {
       const insertQuery = `
         INSERT INTO teacher_assignment (course_id, initial, session)
         VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'))
@@ -798,7 +887,11 @@ export async function setTeacherAssignmentDB(assignment) {
       SET initial = $1
       WHERE course_id = $2 AND initial = $3 and session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
       `;
-      const updateValues = [assignment.initial, assignment.course_id, assignment.old_initial];
+      const updateValues = [
+        assignment.initial,
+        assignment.course_id,
+        assignment.old_initial,
+      ];
       await client.query(updateQuery, updateValues);
       const sectionUpdateQuery = `
         UPDATE courses_sections
@@ -806,7 +899,11 @@ export async function setTeacherAssignmentDB(assignment) {
         WHERE course_id = $3 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
           AND $1 = ANY(teachers);
       `;
-      const sectionUpdateValues = [assignment.old_initial, assignment.initial, assignment.course_id];
+      const sectionUpdateValues = [
+        assignment.old_initial,
+        assignment.initial,
+        assignment.course_id,
+      ];
       await client.query(sectionUpdateQuery, sectionUpdateValues);
 
       const scheduleUpdateQuery = `
@@ -840,7 +937,12 @@ export async function setTeacherSessionalAssignmentDB(assignment) {
   WHERE course_id = $2 AND batch = $3 AND section = $4
   AND NOT ($1 = ANY(teachers));
   `;
-  const values = [assignment.initial, assignment.course_id, assignment.batch, assignment.section];
+  const values = [
+    assignment.initial,
+    assignment.course_id,
+    assignment.batch,
+    assignment.section,
+  ];
   const client = await connect();
 
   try {
@@ -853,7 +955,12 @@ export async function setTeacherSessionalAssignmentDB(assignment) {
   }
 }
 
-export async function deleteTeacherSessionalAssignmentDB(initial, course_id, batch, section) {
+export async function deleteTeacherSessionalAssignmentDB(
+  initial,
+  course_id,
+  batch,
+  section
+) {
   const query = `
     DELETE FROM teacher_sessional_assignment
     WHERE initial = $1 AND course_id = $2 AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION') AND batch = $3 AND section = $4
@@ -882,7 +989,8 @@ export async function getFormIdByInitialAndType(initial, type) {
   const client = await connect();
   try {
     const results = await client.query(query, values);
-    if (results.rows.length <= 0) throw new HttpError(404, "Form not found or already submitted");
+    if (results.rows.length <= 0)
+      throw new HttpError(404, "Form not found or already submitted");
     return results.rows[0].id;
   } finally {
     client.release();
@@ -901,13 +1009,13 @@ export async function calculateTeacherTotalCredit(initial) {
       WHERE initial = $1 AND active = 1
     `;
     const teacherResult = await client.query(teacherQuery, [initial]);
-    
+
     if (teacherResult.rows.length === 0) {
       throw new HttpError(404, "Teacher not found or inactive");
     }
-    
+
     const teacher = teacherResult.rows[0];
-    
+
     // Add thesis credits
     if (teacher.offers_thesis_1) {
       totalCredit += 6;
@@ -915,8 +1023,8 @@ export async function calculateTeacherTotalCredit(initial) {
     if (teacher.offers_thesis_2) {
       totalCredit += 6;
     }
-    
-    // Add MSC credits  
+
+    // Add MSC credits
     if (teacher.offers_msc) {
       totalCredit += 3;
     }
@@ -931,13 +1039,18 @@ export async function calculateTeacherTotalCredit(initial) {
       AND c.type = 1
     `;
     const sessionalResult = await client.query(sessionalQuery, [initial]);
-    
+
     // Add sessional credits
     for (const sessional of sessionalResult.rows) {
-      if (initial === "MMA"){
-        console.log("Sessional Course:", sessional.course_id, "Credit:", sessional.teacher_credit);
+      if (initial === "MMA") {
+        console.log(
+          "Sessional Course:",
+          sessional.course_id,
+          "Credit:",
+          sessional.teacher_credit
+        );
       }
-      totalCredit += 2*(sessional.class_per_week || 0);
+      totalCredit += 2 * (sessional.class_per_week || 0);
     }
 
     // Get all theory assignments for the teacher
@@ -952,7 +1065,7 @@ export async function calculateTeacherTotalCredit(initial) {
       AND ac.type = 0
     `;
     const theoryResult = await client.query(theoryQuery, [initial]);
-    
+
     // For each theory assignment, calculate credit based on number of teachers for that specific course section
     for (const theory of theoryResult.rows) {
       // Count total teachers assigned to the same course section
@@ -963,15 +1076,26 @@ export async function calculateTeacherTotalCredit(initial) {
         AND session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
       `;
       const teacherCountResult = await client.query(teacherCountQuery, [
-        theory.course_id, theory.section
+        theory.course_id,
+        theory.section,
       ]);
-      
-      const teacherCount = parseInt(teacherCountResult.rows[0].teacher_count) || 1;
+
+      const teacherCount =
+        parseInt(teacherCountResult.rows[0].teacher_count) || 1;
       const courseCredit = theory.class_per_week || 0;
-      
+
       // Add proportional credit for this course section
-      if (initial === "MMA"){
-        console.log("Theory Course:", theory.course_id, "Section:", theory.section, "Credit:", courseCredit, "Teacher Count:", teacherCount);
+      if (initial === "MMA") {
+        console.log(
+          "Theory Course:",
+          theory.course_id,
+          "Section:",
+          theory.section,
+          "Credit:",
+          courseCredit,
+          "Teacher Count:",
+          teacherCount
+        );
       }
       totalCredit += courseCredit / teacherCount;
     }
@@ -984,10 +1108,9 @@ export async function calculateTeacherTotalCredit(initial) {
         thesis2: teacher.offers_thesis_2 ? 6 : 0,
         msc: teacher.offers_msc ? 3 : 0,
         sessionalCourses: sessionalResult.rows.length,
-        theoryCourses: theoryResult.rows.length
-      }
+        theoryCourses: theoryResult.rows.length,
+      },
     };
-    
   } finally {
     client.release();
   }
@@ -1004,19 +1127,22 @@ export async function calculateAllTeachersCredits() {
       ORDER BY name
     `;
     const teachersResult = await client.query(teachersQuery);
-    
+
     const results = [];
-    
+
     // Calculate credits for each teacher
     for (const teacher of teachersResult.rows) {
       try {
         const creditInfo = await calculateTeacherTotalCredit(teacher.initial);
         results.push({
           ...teacher,
-          ...creditInfo
+          ...creditInfo,
         });
       } catch (error) {
-        console.error(`Error calculating credits for teacher ${teacher.initial}:`, error);
+        console.error(
+          `Error calculating credits for teacher ${teacher.initial}:`,
+          error
+        );
         results.push({
           ...teacher,
           initial: teacher.initial,
@@ -1026,14 +1152,13 @@ export async function calculateAllTeachersCredits() {
             thesis2: 0,
             msc: 0,
             sessionalCourses: 0,
-            theoryCourses: 0
-          }
+            theoryCourses: 0,
+          },
         });
       }
     }
-    
+
     return results;
-    
   } finally {
     client.release();
   }
@@ -1056,9 +1181,9 @@ export async function getTheoryDistributionDB() {
       AND ac.type = 0
       ORDER BY cs.course_id, cs.section
     `;
-    
+
     const result = await client.query(query);
-    
+
     // Transform the data to include teacher details
     const teacherDetailsQuery = `
       SELECT initial, name, email, surname 
@@ -1070,20 +1195,19 @@ export async function getTheoryDistributionDB() {
       acc[teacher.initial] = teacher;
       return acc;
     }, {});
-    
+
     // Enhance the result with teacher details
-    const enhancedResult = result.rows.map(row => ({
+    const enhancedResult = result.rows.map((row) => ({
       ...row,
-      teachers_details: (row.teachers || []).map(initial => ({
+      teachers_details: (row.teachers || []).map((initial) => ({
         initial,
-        name: teachersMap[initial]?.name || 'Unknown',
-        email: teachersMap[initial]?.email || '',
-        surname: teachersMap[initial]?.surname || 'Unknown'
-      }))
+        name: teachersMap[initial]?.name || "Unknown",
+        email: teachersMap[initial]?.email || "",
+        surname: teachersMap[initial]?.surname || "Unknown",
+      })),
     }));
-    
+
     return enhancedResult;
-    
   } finally {
     client.release();
   }
@@ -1117,13 +1241,13 @@ export async function getSessionalDistributionDB() {
       AND ac.type = 1
       ORDER BY cs.course_id, cs.section, tsa.initial
     `;
-    
+
     const result = await client.query(query);
-    
+
     // Group by course and section
     const groupedResult = result.rows.reduce((acc, row) => {
       const key = `${row.course_id}-${row.section}`;
-      
+
       if (!acc[key]) {
         acc[key] = {
           course_id: row.course_id,
@@ -1131,23 +1255,22 @@ export async function getSessionalDistributionDB() {
           section: row.section,
           day: row.day,
           time: row.time,
-          teachers_details: []
+          teachers_details: [],
         };
       }
-      
+
       if (row.initial && row.teacher_name) {
         acc[key].teachers_details.push({
           initial: row.initial,
           name: row.teacher_name,
-          surname: row.teacher_surname || 'Unknown'
+          surname: row.teacher_surname || "Unknown",
         });
       }
-      
+
       return acc;
     }, {});
-    
+
     return Object.values(groupedResult);
-    
   } finally {
     client.release();
   }
