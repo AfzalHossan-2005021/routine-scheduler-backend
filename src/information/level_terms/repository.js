@@ -285,10 +285,52 @@ async function initializeCoursesSectionsTable() {
         JOIN sections s 
         ON c.level_term = s.level_term AND c.type = s.type AND c."to" = s.department;
     `;
+    const query2 = `
+        SELECT course_id 
+        FROM courses
+        WHERE class_per_week = 0.75
+    `;
     const client = await connect();
     try {
         await client.query("BEGIN");
         await client.query(query);
+        const result = await client.query(query2);
+        const courses = result.rows.map(row => row.course_id);
+
+        // For 0.75 credit courses, remove subsection entries and add main section entries
+        for (const courseId of courses) {
+            // First, get the distinct main sections before deleting
+            const selectQuery = `
+                SELECT DISTINCT session, batch, LEFT(section, 1) as main_section, department
+                FROM courses_sections 
+                WHERE course_id = $1 AND section ~ '^[A-Z][0-9]+$'
+            `;
+            const sectionsResult = await client.query(selectQuery, [courseId]);
+            
+            // Delete existing subsection entries (like A1, A2) for this course
+            const deleteQuery = `
+                DELETE FROM courses_sections 
+                WHERE course_id = $1 AND section ~ '^[A-Z][0-9]+$'
+            `;
+            await client.query(deleteQuery, [courseId]);
+
+            // Insert main section entries (like A, B) for this course
+            for (const sectionData of sectionsResult.rows) {
+                const insertQuery = `
+                    INSERT INTO courses_sections (course_id, session, batch, section, department)
+                    VALUES ($1, $2, $3, $4, $5)
+                    ON CONFLICT DO NOTHING
+                `;
+                await client.query(insertQuery, [
+                    courseId, 
+                    sectionData.session, 
+                    sectionData.batch, 
+                    sectionData.main_section, 
+                    sectionData.department
+                ]);
+            }
+        }
+
         await client.query("COMMIT");
     } catch (error) {
         await client.query("ROLLBACK");

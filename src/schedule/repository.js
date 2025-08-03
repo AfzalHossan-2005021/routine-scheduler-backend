@@ -231,12 +231,13 @@ export async function getAllScheduleDB() {
 
 export async function getDepartmentalSessionalSchedule() {
   const query = `
-    SELECT course_id, batch, "section", "day", "time", department
-    FROM schedule_assignment
-    WHERE course_id LIKe 'CSE%'
-    AND LENGTH("section") = 2
-    AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
-    ORDER BY course_id, "section"
+    SELECT sa.course_id, sa.batch, sa."section", sa."day", sa."time", sa.department, c.class_per_week
+    FROM schedule_assignment sa
+    JOIN courses c ON sa.course_id = c.course_id
+    WHERE sa.course_id LIKE 'CSE%'
+    AND c.type = 1
+    AND sa."session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    ORDER BY sa.course_id, sa."section"
   `;
   const client = await connect();
   const results = await client.query(query);
