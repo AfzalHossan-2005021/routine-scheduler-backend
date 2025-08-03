@@ -4,8 +4,8 @@ import jwt from "jsonwebtoken";
 import {
   adminExistsEmail,
   findAdminDB as findAdminUsingUsername,
-  registerAdminDB,
   updateEmailDB,
+  updatePasswordDB,
 } from "./repository.js";
 import { HttpError } from "../config/error-handle.js";
 
@@ -43,32 +43,6 @@ export async function forgetPassReq(req, res, next) {
   }
 }
 
-export async function register(req, res, next) {
-  const username = req.body.username;
-  const password = req.body.password;
-  const email = req.body.email;
-
-  try {
-    const hash = await bcrypt.hash(password, saltRounds);
-    if (await adminExistsEmail(email)) {
-      throw new HttpError(400, "Email already exists!");
-    }
-    const result = await registerAdminDB(username, hash, email);
-    if (result) {
-      const token = jwt.sign({ username }, secret, {
-        expiresIn: "2 days",
-      });
-      res.status(201).json({
-        success: true,
-        user: { username, email },
-        token: token
-      });
-    }
-  } catch (error) {
-    next(error);
-  }
-}
-
 export async function updateEmail(req, res, next) {
   var username = req.username;
   var email = req.body.email;
@@ -77,6 +51,34 @@ export async function updateEmail(req, res, next) {
     res
       .status(200)
       .json({ message: "update successfull!", username: username });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function changePassword(req, res, next) {
+  const username = req.username; // This comes from the authorize middleware
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+    // First, verify the current password
+    const admin = await findAdminUsingUsername(username);
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, admin.password);
+
+    if (!isCurrentPasswordValid) {
+      throw new HttpError(401, "Current password is incorrect!");
+    }
+
+    // Hash the new password
+    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update the password in the database
+    await updatePasswordDB(username, newPasswordHash);
+
+    res.status(200).json({ 
+      message: "Password changed successfully!",
+      username: username 
+    });
   } catch (error) {
     next(error);
   }
