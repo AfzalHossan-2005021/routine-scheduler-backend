@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Teacher Routine</title>
+    <title>Department Routine</title>
     <style>
       @page {
         size: A4;
@@ -30,10 +30,10 @@
         margin-bottom: 20px;
       }
 
-      .section-header {
+      .department-header {
         text-align: center;
         font-weight: bold;
-        font-size: 11pt;
+        font-size: 12pt;
         margin-top: 15px;
         margin-bottom: 3px;
       }
@@ -53,7 +53,7 @@
 
       th {
         border: 1px solid #000;
-        background-color: #f0f0f0;
+        background-color: #e0e0e0;
         text-align: center;
         padding: 4px 2px;
         font-weight: bold;
@@ -70,14 +70,12 @@
       }
 
       .day-column {
-        width: 50px;
         font-weight: bold;
-        background-color: #f8f8f8;
+        background-color: #e0e0e0;
       }
 
       .time-column {
-        width: 9%;
-        min-width: 45px;
+        width: 10%;
       }
 
       .course-cell {
@@ -91,16 +89,16 @@
       }
 
       .room-number {
-        font-size: 7pt;
+        font-size: 6pt;
       }
 
       .teacher-initials {
-        font-size: 6pt;
-        font-style: italic;
+        font-size: 5pt;
       }
 
-      .level-term {
+      .level-term-info {
         font-size: 6pt;
+        color: #666;
       }
 
       .multi-course-table {
@@ -137,30 +135,28 @@
       .page-break {
         page-break-before: always;
       }
+
+      .empty-routine {
+        text-align: center;
+        margin: 10px 0;
+        font-style: italic;
+        color: #666;
+      }
     </style>
   </head>
 
   <body>
-    <div class="main-header">TEACHER ROUTINE</div>
+    <div class="main-header">DEPARTMENT ROUTINE</div>
     <div class="routine-date">{{@root.currentSession}}</div>
     <div class="dept-header">Dept of CSE, BUET</div>
 
     {{#each datas}} {{#unless @first}}
     <div class="page-break"></div>
     {{/unless}}
-    <div class="section-header">{{this.title}}</div>
+    <div class="department-header">{{this.title}}</div>
 
     {{#if this.isEmpty}}
-    <div
-      style="
-        text-align: center;
-        margin: 10px 0;
-        font-style: italic;
-        color: #666;
-      "
-    >
-      No scheduled classes for this teacher
-    </div>
+    <div class="empty-routine">No scheduled classes for this course</div>
     {{/if}}
 
     <table width="100%">
@@ -206,12 +202,13 @@
                   "
                 >
                   <div class="course-code">
-                    {{this.course_id}}{{#if this.section}}{{#if
-                    this.showSection}} ({{this.section}}){{/if}}{{/if}}
+                    {{this.course_id}}{{#if this.section}}
+                    ({{this.section}}){{/if}}
                   </div>
+                  <div class="level-term-info">{{this.level_term}}</div>
                   <div class="room-number">{{this.room}}</div>
-                  {{#if ../this.level_term}}
-                  <div class="level-term">{{../this.level_term}}</div>
+                  {{#if this.initial}}
+                  <div class="teacher-initials">[ {{this.initial}} ]</div>
                   {{/if}} {{#unless @last}}
                   <div
                     class="course-divider"
@@ -231,9 +228,9 @@
             </table>
             {{else}} {{#if this.course_id}}
             <div class="course-code">
-              {{this.course_id}}{{#if this.showSection}}{{#if this.section}}
-              ({{this.section}}){{/if}}{{/if}}
+              {{this.course_id}}{{#if this.section}} ({{this.section}}){{/if}}
             </div>
+            <div class="level-term-info">{{this.level_term}}</div>
             <div class="room-number">{{this.room}}</div>
             {{#if this.initial}}
             <div class="teacher-initials">[ {{this.initial}} ]</div>
