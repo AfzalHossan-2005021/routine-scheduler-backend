@@ -303,6 +303,7 @@ export async function finalize() {
         }
       }
     }
+    console.log(noOfTeachersResults);
 
     await client.query("COMMIT");
   } catch (e) {
@@ -462,8 +463,10 @@ export async function getTeacherTheoryAssigments(initial) {
 
 export async function getLabRoomAssignmentDB() {
   const query = `
-    SELECT course_id, "session", batch, "section", room
-    FROM lab_room_assignment
+    SELECT course_id, "session", batch, "section", room_no AS room
+    FROM schedule_assignment
+    WHERE course_id ~ '[02468]$'
+    AND course_id LIKE 'CSE%'
     ORDER BY course_id, "section";
   `;
   const client = await connect();
@@ -473,14 +476,19 @@ export async function getLabRoomAssignmentDB() {
 }
 
 export async function setLabRoomAssignemntDB(assignment) {
-  const insertQuery = `INSERT INTO lab_room_assignment (course_id, "session", batch, "section", room)
-  VALUES ($1, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $2, $3, $4)`;
+  const query = `
+    UPDATE schedule_assignment
+    SET room_no = $4
+    WHERE course_id = $1
+      AND batch = $2
+      AND section = $3
+    `;
 
   const client = await connect();
   try {
     assignment.forEach((row) => {
       const values = [row.course_id, row.batch, row.section, row.room];
-      client.query(insertQuery, values);
+      client.query(query, values);
     });
   } finally {
     client.release();
