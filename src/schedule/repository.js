@@ -40,7 +40,7 @@ export async function getScheduleConfigs() {
 export async function getTheorySchedule(department, batch, section) {
   // This query gets schedules for both the main section and any subsections
   const query = `
-    SELECT course_id, c.type, "day", "time", department, "section"
+    SELECT course_id, c.type, "day", "time", department, "section", c.class_per_week
     FROM schedule_assignment sa
     NATURAL JOIN courses c
     WHERE department = $1 AND batch = $2 AND ("section" = $3 OR "section" LIKE $4)
