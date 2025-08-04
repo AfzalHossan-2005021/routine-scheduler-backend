@@ -494,10 +494,11 @@ export async function getSessionalPreferencesStatus() {
 
 export async function getTeacherSessionalAssignment(initial) {
   const query = `
-    SELECT course_id, batch, "section"
-    FROM teacher_sessional_assignment
-    WHERE initial = $1
-    AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    SELECT tsa.course_id, tsa.batch, tsa."section", c.class_per_week
+    FROM teacher_sessional_assignment tsa
+    JOIN courses c ON tsa.course_id = c.course_id
+    WHERE tsa.initial = $1
+    AND tsa."session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
   `;
   const client = await connect();
   const result = await client.query(query, [initial]);
@@ -1096,6 +1097,7 @@ export async function getSessionalDistributionDB() {
       SELECT 
         cs.course_id,
         ac.name as course_name,
+        ac.class_per_week,
         cs.section,
         tsa.initial,
         t.name as teacher_name,
@@ -1128,6 +1130,7 @@ export async function getSessionalDistributionDB() {
         acc[key] = {
           course_id: row.course_id,
           course_name: row.course_name,
+          class_per_week: row.class_per_week,
           section: row.section,
           day: row.day,
           time: row.time,
