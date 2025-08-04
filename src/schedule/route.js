@@ -6,7 +6,6 @@ import {
   getSessionalScheduleAPI,
   getTheoryScheduleAPI,
   initiate,
-  roomContradiction,
   setSessionalScheduleAPI,
   setTheoryScheduleAPI,
   teacherContradiction,
@@ -25,7 +24,6 @@ router.get("/sessional/departmental", getDepartmentalSessionalScheduleAPI);
 router.post("/sessional/:batch/:section/:department", setSessionalScheduleAPI);
 
 router.get("/all", getAllSchedule)
-router.get("/contradiction/room/:batch/:section/:course_id", roomContradiction)
 router.get("/contradiction/teacher/:batch/:section/:course_id", teacherContradiction)
 
 router.get("/theory/initiate", initiate);

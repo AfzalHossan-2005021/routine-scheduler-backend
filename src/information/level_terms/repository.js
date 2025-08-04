@@ -139,7 +139,7 @@ export async function deleteLevelTermDB(level_term, department) {
 
 async function clearTables() {
     const query = `
-        truncate schedule_assignment, teacher_sessional_assignment, courses_sections, sections, teacher_assignment, courses, lab_room_assignment, forms;
+        truncate schedule_assignment, teacher_sessional_assignment, courses_sections, sections, teacher_assignment, courses, forms;
     `;
     const client = await connect();
 
