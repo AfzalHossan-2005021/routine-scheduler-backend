@@ -82,7 +82,7 @@
 
       .course-cell {
         font-size: 7pt;
-        line-height: 1.0;
+        line-height: 1;
       }
 
       .course-code {
@@ -102,29 +102,29 @@
       .level-term {
         font-size: 6pt;
       }
-      
+
       .multi-course-table {
         width: 100%;
         border-collapse: collapse;
         margin: 0;
         padding: 0;
       }
-      
+
       .multi-course-row {
         border-bottom: none;
       }
-      
+
       .multi-course-row:last-child {
         border-bottom: none;
       }
-      
+
       .multi-course-cell {
         padding: 3px 0;
         border: none;
         width: 100%;
         position: relative;
       }
-      
+
       .course-divider {
         height: 1px;
         background-color: #000;
@@ -144,17 +144,25 @@
     <div class="main-header">TEACHER ROUTINE</div>
     <div class="routine-date">{{@root.currentSession}}</div>
     <div class="dept-header">Dept of CSE, BUET</div>
-    
-    {{#each datas}}
-    {{#unless @first}}
+
+    {{#each datas}} {{#unless @first}}
     <div class="page-break"></div>
     {{/unless}}
     <div class="section-header">{{this.title}}</div>
-    
+
     {{#if this.isEmpty}}
-    <div style="text-align: center; margin: 10px 0; font-style: italic; color: #666;">No scheduled classes for this teacher</div>
+    <div
+      style="
+        text-align: center;
+        margin: 10px 0;
+        font-style: italic;
+        color: #666;
+      "
+    >
+      No scheduled classes for this teacher
+    </div>
     {{/if}}
-    
+
     <table width="100%">
       <thead>
         <tr>
@@ -177,35 +185,59 @@
           {{#each this.appointments}}
           <td class="course-cell" colspan="{{this.colspan}}">
             {{#if this.hasMultipleCourses}}
-              <table class="multi-course-table" style="width: 100%; border-collapse: collapse; margin: 0; padding: 0;">
-                {{#each this.courses}}
-                <tr class="multi-course-row">
-                  <td class="multi-course-cell" style="padding: 3px 0; border: none; width: 100%; position: relative;">
-                    <div class="course-code">{{this.course_id}}{{#if this.section}}{{#if this.showSection}} ({{this.section}}){{/if}}{{/if}}</div>
-                    <div class="room-number">{{this.room}}</div>
-                    {{#if ../this.level_term}}
-                    <div class="level-term">{{../this.level_term}}</div>
-                    {{/if}}
-                    {{#unless @last}}
-                    <div class="course-divider" style="height: 1px; background-color: #000; position: absolute; bottom: -1px; left: -1px; right: -1px;"></div>
-                    {{/unless}}
-                  </td>
-                </tr>
-                {{/each}}
-              </table>
-            {{else}}
-              {{#if this.course_id}}
-              <div class="course-code">{{this.course_id}}{{#if this.section}}{{#if this.showSection}} ({{this.section}}){{/if}}{{/if}}</div>
-              <div class="room-number">{{this.room}}</div>
-              {{#if this.level_term}}
-              <div class="level-term">{{this.level_term}}</div>
-              {{/if}}
-            {{/if}}
-            {{else}}
-            {{#if this.appointment_type}}
-            <div class="course-code">{{this.appointment_type}}</div>
-            {{/if}}
-            {{/if}}
+            <table
+              class="multi-course-table"
+              style="
+                width: 100%;
+                border-collapse: collapse;
+                margin: 0;
+                padding: 0;
+              "
+            >
+              {{#each this.courses}}
+              <tr class="multi-course-row">
+                <td
+                  class="multi-course-cell"
+                  style="
+                    padding: 3px 0;
+                    border: none;
+                    width: 100%;
+                    position: relative;
+                  "
+                >
+                  <div class="course-code">
+                    {{this.course_id}}{{#if this.section}}{{#if
+                    this.showSection}} ({{this.section}}){{/if}}{{/if}}
+                  </div>
+                  <div class="room-number">{{this.room}}</div>
+                  {{#if ../this.level_term}}
+                  <div class="level-term">{{../this.level_term}}</div>
+                  {{/if}} {{#unless @last}}
+                  <div
+                    class="course-divider"
+                    style="
+                      height: 1px;
+                      background-color: #000;
+                      position: absolute;
+                      bottom: -1px;
+                      left: -1px;
+                      right: -1px;
+                    "
+                  ></div>
+                  {{/unless}}
+                </td>
+              </tr>
+              {{/each}}
+            </table>
+            {{else}} {{#if this.course_id}}
+            <div class="course-code">
+              {{this.course_id}}{{#if this.showSection}}{{#if this.section}}
+              ({{this.section}}){{/if}}{{/if}}
+            </div>
+            <div class="room-number">{{this.room}}</div>
+            {{#if this.initial}}
+            <div class="teacher-initials">[ {{this.initial}} ]</div>
+            {{/if}} {{/if}} {{/if}}
           </td>
           {{/each}}
         </tr>

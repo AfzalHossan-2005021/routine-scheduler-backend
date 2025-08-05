@@ -13,7 +13,6 @@ import {
   getAllScheduleDB,
   getCourseAllSchedule,
   getCourseSectionalSchedule,
-  roomContradictionDB,
   teacherContradictionDB,
   ensureEmailTemplateExists,
 } from "./repository.js";
@@ -242,18 +241,6 @@ export async function getCourseSectionalScheduleAPI(req, res, next) {
   try {
     const { course_id, section } = req.params;
     const result = await getCourseSectionalSchedule(course_id, section);
-    res.status(200).json(result);
-  } catch (err) {
-    next(err);
-  }
-}
-
-
-
-export async function roomContradiction(req, res, next) {
-  try {
-    const { batch, section, course_id } = req.params;
-    const result = await roomContradictionDB(batch, section, course_id);
     res.status(200).json(result);
   } catch (err) {
     next(err);
