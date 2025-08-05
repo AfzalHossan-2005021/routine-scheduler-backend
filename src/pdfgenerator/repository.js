@@ -207,6 +207,19 @@ export async function routineForDeptLevelTermCourseDB(
   return results.rows;
 }
 
+export async function getRoutine(type, key) {
+    const query = `
+    select url
+    from routine_pdf
+    where type = $1 and key = $2
+    `
+    const values = [type, key];
+    const client = await connect();
+    const results = await client.query(query, values);
+    client.release();
+    return results.rows[0];
+}
+
 export async function saveRoutine(type, key, url) {
   const insertQuery = `
     insert into routine_pdf (type, key, url)
