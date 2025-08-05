@@ -40,7 +40,7 @@ export async function getScheduleConfigs() {
 export async function getTheorySchedule(department, batch, section) {
   // This query gets schedules for both the main section and any subsections
   const query = `
-    SELECT course_id, c.type, "day", "time", department, "section"
+    SELECT course_id, c.type, "day", "time", department, "section", c.class_per_week
     FROM schedule_assignment sa
     NATURAL JOIN courses c
     WHERE department = $1 AND batch = $2 AND ("section" = $3 OR "section" LIKE $4)
@@ -231,12 +231,13 @@ export async function getAllScheduleDB() {
 
 export async function getDepartmentalSessionalSchedule() {
   const query = `
-    SELECT course_id, batch, "section", "day", "time", department
-    FROM schedule_assignment
-    WHERE course_id LIKe 'CSE%'
-    AND LENGTH("section") = 2
-    AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
-    ORDER BY course_id, "section"
+    SELECT sa.course_id, sa.batch, sa."section", sa."day", sa."time", sa.department, c.class_per_week
+    FROM schedule_assignment sa
+    JOIN courses c ON sa.course_id = c.course_id
+    WHERE sa.course_id LIKE 'CSE%'
+    AND c.type = 1
+    AND sa."session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    ORDER BY sa.course_id, sa."section"
   `;
   const client = await connect();
   const results = await client.query(query);

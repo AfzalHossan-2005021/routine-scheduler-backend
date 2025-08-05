@@ -22,7 +22,7 @@ export async function getAllCourse(req, res, next) {
 export async function addCourse(req, res, next) {
   const course_id = req.body.course_id;
   const name = req.body.name;
-  const type = req.body.type;
+  const type = parseInt(req.body.type); // Convert to number
   const session = req.body.session;
   const class_per_week = req.body.class_per_week;
   const batch = req.body.batch;
@@ -31,6 +31,11 @@ export async function addCourse(req, res, next) {
   const from = req.body.from;
   const to = req.body.to;
   const level_term = req.body.level_term;
+  const assignedSections = req.body.assignedSections || [];
+
+  console.log('DEBUG addCourse: Received data:', {
+    course_id, name, type: req.body.type, typeConverted: type, assignedSections
+  });
 
   const Course = {
     course_id: course_id,
@@ -43,7 +48,8 @@ export async function addCourse(req, res, next) {
     teacher_credit: teacher_credit,
     from: from,
     to: to,
-    level_term: level_term
+    level_term: level_term,
+    assignedSections: assignedSections
   };
 
   try {
@@ -62,7 +68,7 @@ export async function editCourse(req, res, next) {
 
   const course_id = req.body.course_id;
   const name = req.body.name;
-  const type = req.body.type;
+  const type = parseInt(req.body.type); // Convert to number
   const session = req.body.session;
   const class_per_week = req.body.class_per_week;
   const batch = req.body.batch;
@@ -71,6 +77,11 @@ export async function editCourse(req, res, next) {
   const from = req.body.from;
   const to = req.body.to;
   const level_term = req.body.level_term;
+  const assignedSections = req.body.assignedSections || [];
+
+  console.log('DEBUG editCourse: Received data:', {
+    course_id_old, course_id, name, type: req.body.type, typeConverted: type, assignedSections
+  });
 
   const Course = {
     course_id_old: course_id_old,
@@ -84,7 +95,8 @@ export async function editCourse(req, res, next) {
     teacher_credit: teacher_credit,
     from: from,
     to: to,
-    level_term: level_term
+    level_term: level_term,
+    assignedSections: assignedSections
   };
 
   try {
