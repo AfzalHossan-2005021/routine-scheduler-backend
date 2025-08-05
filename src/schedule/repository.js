@@ -40,7 +40,7 @@ export async function getScheduleConfigs() {
 export async function getTheorySchedule(department, batch, section) {
   // This query gets schedules for both the main section and any subsections
   const query = `
-    SELECT course_id, c.type, "day", "time", department, "section"
+    SELECT course_id, c.type, "day", "time", department, "section", c.class_per_week
     FROM schedule_assignment sa
     NATURAL JOIN courses c
     WHERE department = $1 AND batch = $2 AND ("section" = $3 OR "section" LIKE $4)
@@ -231,12 +231,13 @@ export async function getAllScheduleDB() {
 
 export async function getDepartmentalSessionalSchedule() {
   const query = `
-    SELECT course_id, batch, "section", "day", "time", department
-    FROM schedule_assignment
-    WHERE course_id LIKe 'CSE%'
-    AND LENGTH("section") = 2
-    AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
-    ORDER BY course_id, "section"
+    SELECT sa.course_id, sa.batch, sa."section", sa."day", sa."time", sa.department, c.class_per_week
+    FROM schedule_assignment sa
+    JOIN courses c ON sa.course_id = c.course_id
+    WHERE sa.course_id LIKE 'CSE%'
+    AND c.type = 1
+    AND sa."session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    ORDER BY sa.course_id, sa."section"
   `;
   const client = await connect();
   const results = await client.query(query);
@@ -244,23 +245,7 @@ export async function getDepartmentalSessionalSchedule() {
   return results.rows;
 }
 
-export async function roomContradictionDB(batch, section, course_id) {
-  const roomQuery = `
-  select room from lab_room_assignment lra where batch = $1 and "section" = $2 and course_id = $3 and session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
-  `;
 
-  const contradictionQuery = `
-  select * from lab_room_assignment lra natural join schedule_assignment sa where room = $1 and session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
-  `;
-
-  const client = await connect();
-  let results = (await client.query(roomQuery, [batch, section, course_id]))
-    .rows;
-  const room = results[0]?.room;
-  results = (await client.query(contradictionQuery, [room])).rows;
-  client.release();
-  return results;
-}
 
 export async function teacherContradictionDB(batch, section, course_id) {
   const teacherQuery = `
