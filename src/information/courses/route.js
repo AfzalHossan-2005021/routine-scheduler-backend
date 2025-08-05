@@ -3,11 +3,12 @@ import express from 'express'
 
 const router = express.Router();
 
-import {  getAllCourse , addCourse , editCourse, deleteCourse, getLabCourses, getNonDeptLabCourses, getSessionalCoursesByDeptLevelTermAPI,getTheoryCoursesByDeptLevelTermAPI,getNonDeptTheoryCourses } from './controller.js';
+import {  getAllCourse , getActiveCourseIdsAPI, addCourse , editCourse, deleteCourse, getLabCourses, getNonDeptLabCourses, getSessionalCoursesByDeptLevelTermAPI,getTheoryCoursesByDeptLevelTermAPI,getNonDeptTheoryCourses } from './controller.js';
 import validate from "../../config/validation.js";
 import {body} from 'express-validator'
 
 router.get("/", getAllCourse)
+router.get("/active", getActiveCourseIdsAPI)
 // router.get("/:initial", getCourse)
 
 // Debug test endpoint

@@ -45,6 +45,25 @@ export async function getAll() {
   }
 }
 
+export async function getActiveCourseIds() {
+  try {
+    const query = `
+      SELECT DISTINCT course_id
+      FROM courses
+      WHERE course_id != 'CT'
+      ORDER BY course_id
+    `;
+    const client = await connect();
+    const results = await client.query(query);
+    client.release();
+    console.log('getActiveCourseIds result:', results.rows);
+    return results.rows;
+  } catch (err) {
+    console.error('Error in getActiveCourseIds:', err);
+    throw err;
+  }
+}
+
 export async function saveCourse(Course) {
   const course_id = Course.course_id;
   const name = Course.name;

@@ -1,5 +1,6 @@
 import {
   getAll,
+  getActiveCourseIds,
   saveCourse,
   updateCourse,
   removeCourse,
@@ -14,6 +15,15 @@ export async function getAllCourse(req, res, next) {
   try {
     const Courses = await getAll();
     res.status(200).json(Courses);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getActiveCourseIdsAPI(req, res, next) {
+  try {
+    const activeCourseIds = await getActiveCourseIds();
+    res.status(200).json(activeCourseIds);
   } catch (err) {
     next(err);
   }
