@@ -1058,7 +1058,11 @@ export async function calculateTeacherTotalCredit(initial) {
           sessional.teacher_credit
         );
       }
-      totalCredit += 2 * (sessional.class_per_week || 0);
+      if (sessional.class_per_week === 0.75){
+          totalCredit += 4 * (sessional.class_per_week || 0);
+      }else{
+          totalCredit += 2 * (sessional.class_per_week || 0);
+      }
     }
 
     // Get all theory assignments for the teacher
