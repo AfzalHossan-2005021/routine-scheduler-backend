@@ -135,43 +135,6 @@ export async function getRoutine(type, key) {
     return results.rows[0];
 }
 
-export async function routineForDepartment(department) {
-    const query = `
-    SELECT 
-        sa.*,
-        s.level_term,
-        c.type,
-        c.name as course_name,
-        COALESCE(sa.room_no, lra.room) as room,
-        sa.teachers
-    FROM schedule_assignment sa
-    JOIN sections s ON (sa.department = s.department AND sa.batch = s.batch AND sa.section = s.section)
-    JOIN courses c ON (sa.course_id = c.course_id AND sa.session = c.session)
-    LEFT JOIN lab_room_assignment lra ON (sa.course_id = lra.course_id AND sa.session = lra.session AND sa.batch = lra.batch AND sa.section = lra.section)
-    WHERE c."from" = $1
-    AND sa.session = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
-    ORDER BY sa.day, sa.time, sa.course_id, sa.section
-    `;
-
-    const values = [department];
-    const client = await connect();
-    const results = await client.query(query, values);
-    client.release();
-    return results.rows;
-}
-
-export async function getDepartments() {
-    const query = `
-        SELECT DISTINCT department
-        FROM hosted_departments
-        ORDER BY department
-    `;
-    const client = await connect();
-    const results = await client.query(query);
-    client.release();
-    return results.rows;
-}
-
 export async function saveRoutine(type, key, url) {
     const insertQuery = `
     insert into routine_pdf (type, key, url)
