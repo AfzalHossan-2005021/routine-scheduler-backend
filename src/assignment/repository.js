@@ -242,7 +242,6 @@ export async function finalize() {
       }
       const initial = row.initial;
       let theoryCourses = row.theory_courses;
-      console.log(initial, theoryCourses);
 
       for (const course_id of courses) {
         if (
@@ -303,7 +302,6 @@ export async function finalize() {
         }
       }
     }
-    console.log(noOfTeachersResults);
 
     await client.query("COMMIT");
   } catch (e) {
@@ -336,8 +334,7 @@ export async function getTheoryAssignment() {
     WHERE c.course_id LIKE 'CSE%' AND c.type = 0
     GROUP BY c.course_id, c."name"
     ORDER BY c.course_id;
-    `;
-
+  `;
   const client = await connect();
   const result = (await client.query(query)).rows;
   client.release();
@@ -507,7 +504,6 @@ export async function getSessionalPreferencesStatus() {
   try {
     const results = await client.query(query);
     const cleanResult = results.rows.map((row) => {
-      //console.log(row)
       let parsedResponse = null;
       if (row.response) {
         try {
@@ -708,8 +704,6 @@ export async function finalizeSessional() {
       rankSubjects.push(courses);
     });
 
-    // console.log(rankSubjects);
-
     const courses = Object.keys(coursePerTheorySection);
     const rankTeachers = courses.map((subject) => {
       const courseTeachers = coursePerTheorySection[subject].teachers;
@@ -741,11 +735,6 @@ export async function finalizeSessional() {
       if (index === -1) throw new Error("Invalid teacher: " + teacher);
       return rankSubjects[index];
     };
-
-    // console.log(stableMatchingCourses);
-    // console.log(rankTeachers);
-    // console.log(stableMatchingTeachers);
-    // console.log(rankSubjects);
 
     const match = sma.match(
       stableMatchingTeachers,
@@ -1050,14 +1039,6 @@ export async function calculateTeacherTotalCredit(initial) {
 
     // Add sessional credits
     for (const sessional of sessionalResult.rows) {
-      if (initial === "MMA") {
-        console.log(
-          "Sessional Course:",
-          sessional.course_id,
-          "Credit:",
-          sessional.teacher_credit
-        );
-      }
       if (sessional.class_per_week === 0.75){
           totalCredit += 4 * (sessional.class_per_week || 0);
       }else{

@@ -23,11 +23,7 @@ const port = process.env.PORT || 8000;
 
 
 app.use(cors({
-  origin: [
-    'http://localhost:3000', // Development frontend
-    'https://routine-scheduler-buet.duckdns.org', // Production frontend
-    'http://routine-scheduler-buet.duckdns.org' // Production frontend (HTTP)
-  ],
+  origin: 'http://localhost:3000', // Allow only the frontend's origin
   credentials: true, // Allow cookies if needed
 }));
 

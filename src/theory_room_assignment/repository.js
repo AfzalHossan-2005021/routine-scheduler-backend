@@ -18,11 +18,16 @@ export async function updateTheoryRoomAssignmentDB(course_id, section, day, time
     UPDATE schedule_assignment
     SET room_no = $5
     WHERE course_id = $1 AND section = $2 AND day = $3 AND time = $4
+    AND EXISTS (
+      SELECT 1 FROM courses c 
+      WHERE c.course_id = schedule_assignment.course_id 
+      AND c.session = schedule_assignment.session 
+      AND c.type != 1
+    )
   `;
   const values = [course_id, section, day, time, room_no];
   try {
     const client = await connect();
-    await client.query(query, values);
     client.release();
     return true;
   } catch (error) {

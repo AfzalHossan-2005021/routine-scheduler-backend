@@ -2,10 +2,12 @@ import { connect } from "../config/database.js";
 
 export async function routineForLvl(lvlTerm) {
   const query = `
-    -- type = 0 (just section, no concatenation)
     SELECT 
         sa.course_id,
-        sa.section,
+        CASE
+            WHEN c.type = 0 OR c.class_per_week = 1.5 THEN sa.section
+            WHEN c.class_per_week = 0.75 THEN sa.section || '1/' || sa.section || '2'
+        END AS section,
         sa.day,
         sa.time,
         sa.room_no AS room,
@@ -20,32 +22,6 @@ export async function routineForLvl(lvlTerm) {
     JOIN courses c 
         ON sa.course_id = c.course_id
     WHERE s.level_term = $1
-      AND c.type = 0
-
-    UNION ALL
-
-    -- type = 1 (aggregate with '/')
-    SELECT 
-        sa.course_id,
-        ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '/') AS section,
-        sa.day,
-        sa.time,
-        sa.room_no AS room,
-        s.level_term,
-        c.type,
-        sa.teachers
-    FROM schedule_assignment sa
-    JOIN sections s 
-        ON sa.department = s.department 
-        AND sa.batch = s.batch 
-        AND sa.section = s.section
-    JOIN courses c 
-        ON sa.course_id = c.course_id
-    WHERE s.level_term = $1
-      AND c.type = 1
-    GROUP BY sa.course_id, sa.day, sa.time, sa.room_no, s.level_term, c.type, sa.teachers
-
-    ORDER BY section, day, time, course_id;
     `;
   const values = [lvlTerm];
   const client = await connect();
@@ -59,8 +35,8 @@ export async function routineForTeacher(initial) {
     SELECT 
       sa.course_id,
       CASE 
-        WHEN c.type = 0 THEN ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '+')
-        WHEN c.type = 1 THEN ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '/')
+        WHEN c.type = 0 OR c.class_per_week = 1.5 THEN ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '+')
+        WHEN c.class_per_week = 0.75 THEN MIN(sa.section) || '1/' || MIN(sa.section) || '2'
       END AS section,
       sa.day,
       sa.time,
@@ -70,7 +46,7 @@ export async function routineForTeacher(initial) {
     FROM schedule_assignment sa
     JOIN courses c ON sa.course_id = c.course_id
     WHERE $1 = ANY(sa.teachers)
-    GROUP BY sa.course_id, sa.day, sa.time, sa.room_no, c.type, sa.teachers
+    GROUP BY sa.course_id, sa.day, sa.time, sa.room_no, c.type, sa.teachers, c.class_per_week
     ORDER BY sa.day, sa.time, sa.course_id, section
     `;
 
@@ -84,10 +60,10 @@ export async function routineForTeacher(initial) {
 export async function routineForRoom(room) {
   const query = `
     SELECT 
-    sa.course_id,
+        sa.course_id,
         CASE 
-            WHEN c.type = 0 THEN ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '+')
-            WHEN c.type = 1 THEN ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '/')
+            WHEN c.type = 0 OR c.class_per_week = 1.5 THEN ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '+')
+            WHEN c.class_per_week = 0.75 THEN MIN(sa.section) || '1/' || MIN(sa.section) || '2'
         END AS section,
         sa.day,
         sa.time,
@@ -97,7 +73,7 @@ export async function routineForRoom(room) {
     JOIN courses c 
         ON sa.course_id = c.course_id
     WHERE sa.room_no = $1
-    GROUP BY sa.course_id, sa.day, sa.time, c.type, sa.teachers
+    GROUP BY sa.course_id, sa.day, sa.time, c.type, sa.teachers, c.class_per_week
     ORDER BY sa.day, sa.time, sa.course_id, section;
     `;
 
@@ -207,8 +183,8 @@ export async function routineForDeptLevelTermCourseDB(
     SELECT 
         sa.course_id,
         CASE 
-            WHEN c.type = 0 THEN ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '+')
-            WHEN c.type = 1 THEN ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '/')
+            WHEN c.type = 0 OR c.class_per_week = 1.5 THEN ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '+')
+            WHEN c.class_per_week = 0.75 THEN MIN(sa.section) || '1/' || MIN(sa.section) || '2'
         END AS section,
         sa.day,
         sa.time,
@@ -220,7 +196,7 @@ export async function routineForDeptLevelTermCourseDB(
         ON sa.course_id = c.course_id
     WHERE (c."from" = $1 OR c."to" = $1)
       AND sa.course_id = $2
-    GROUP BY sa.course_id, sa.day, sa.time, sa.room_no, sa.teachers, c.type
+    GROUP BY sa.course_id, sa.day, sa.time, sa.room_no, sa.teachers, c.type, c.class_per_week
     ORDER BY sa.course_id, sa.day, sa.time, section;
     `;
 
@@ -229,6 +205,19 @@ export async function routineForDeptLevelTermCourseDB(
   const results = await client.query(query, values);
   client.release();
   return results.rows;
+}
+
+export async function getRoutine(type, key) {
+    const query = `
+    select url
+    from routine_pdf
+    where type = $1 and key = $2
+    `
+    const values = [type, key];
+    const client = await connect();
+    const results = await client.query(query, values);
+    client.release();
+    return results.rows[0];
 }
 
 export async function saveRoutine(type, key, url) {
