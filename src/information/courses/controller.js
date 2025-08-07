@@ -41,10 +41,11 @@ export async function addCourse(req, res, next) {
   const from = req.body.from;
   const to = req.body.to;
   const level_term = req.body.level_term;
+  const optional = parseInt(req.body.optional || 0); // Convert to number, default to 0
   const assignedSections = req.body.assignedSections || [];
 
   console.log('DEBUG addCourse: Received data:', {
-    course_id, name, type: req.body.type, typeConverted: type, assignedSections
+    course_id, name, type: req.body.type, typeConverted: type, optional, assignedSections
   });
 
   const Course = {
@@ -59,6 +60,7 @@ export async function addCourse(req, res, next) {
     from: from,
     to: to,
     level_term: level_term,
+    optional: optional,
     assignedSections: assignedSections
   };
 
@@ -87,10 +89,11 @@ export async function editCourse(req, res, next) {
   const from = req.body.from;
   const to = req.body.to;
   const level_term = req.body.level_term;
+  const optional = parseInt(req.body.optional || 0); // Convert to number, default to 0
   const assignedSections = req.body.assignedSections || [];
 
   console.log('DEBUG editCourse: Received data:', {
-    course_id_old, course_id, name, type: req.body.type, typeConverted: type, assignedSections
+    course_id_old, course_id, name, type: req.body.type, typeConverted: type, optional, assignedSections
   });
 
   const Course = {
@@ -106,6 +109,7 @@ export async function editCourse(req, res, next) {
     from: from,
     to: to,
     level_term: level_term,
+    optional: optional,
     assignedSections: assignedSections
   };
 

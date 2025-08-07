@@ -187,8 +187,11 @@ async function initializeSectionsTable(levelTerms, session) {
             }
             const levelTermSectionCount = parseInt(section_count_result.rows[0].section_count);
             const subsection_count_per_section = parseInt(section_count_result.rows[0].subsection_count_per_section);
+            let optional_section = "";
             for (let i = 0; i < levelTermSectionCount; i++) {
                 const section = String.fromCharCode(65 + i);
+                optional_section +=  section;
+                if (i != levelTermSectionCount - 1) optional_section += "+";
                 const query = `
                     INSERT INTO sections (batch, section, "type", session, level_term, department)
                     VALUES ($1, $2, $3,$4, $5, $6)
@@ -200,6 +203,11 @@ async function initializeSectionsTable(levelTerms, session) {
                 for(let j = 1; j <= subsection_count_per_section; j++){
                     const values2 = [parseInt(levelTerm.batch), `${section}${j}`, 1, session, levelTerm.level_term, levelTerm.department];
                     await client.query(query, values2);
+                }
+                if (i === levelTermSectionCount - 1) {
+                    // For the last section, add a special section optional courses
+                    const values3 = [parseInt(levelTerm.batch), optional_section, 1, session, levelTerm.level_term, levelTerm.department];
+                    await client.query(query, values3);
                 }
             }
         }
@@ -253,18 +261,18 @@ async function getAllActiveCourses(levelTerms, session) {
 
 async function initializeCoursesTable(activeCourses) {
     const query = `
-        INSERT INTO courses (course_id, session, "name", "type", class_per_week, "from", "to", teacher_credit, level_term) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+        INSERT INTO courses (course_id, session, "name", "type", class_per_week, "from", "to", teacher_credit, level_term, optional) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
     `;
     const query2 = `
-        INSERT INTO courses (course_id, session, "name", "type", class_per_week, "from", "to") VALUES ($1, $2, $3, $4, $5, $6, $7);
+        INSERT INTO courses (course_id, session, "name", "type", class_per_week, "from", "to", optional) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
     `;
-    const values2 = ['CT', activeCourses[0].session, 'Class Test', 0, 3, 'CSE', 'CSE'];
+    const values2 = ['CT', activeCourses[0].session, 'Class Test', 0, 3, 'CSE', 'CSE', 0];
     const client = await connect();
     try {
         await client.query("BEGIN");
         console.log(activeCourses);
         for (const course of activeCourses) {
-            const values = [course.course_id, course.session, course.name, course.type, course.class_per_week, course.from, course.to, course.teacher_credit, course.level_term];
+            const values = [course.course_id, course.session, course.name, course.type, course.class_per_week, course.from, course.to, course.teacher_credit, course.level_term, course.optional];
             await client.query(query, values);
         }
         await client.query(query2, values2);
@@ -283,12 +291,19 @@ async function initializeCoursesSectionsTable() {
         SELECT c.course_id, c.session, s.batch, s.section, s.department
         FROM courses c
         JOIN sections s 
-        ON c.level_term = s.level_term AND c.type = s.type AND c."to" = s.department;
+        ON c.level_term = s.level_term AND c.type = s.type AND c."to" = s.department
+        WHERE (
+            -- If section contains '+', allow only if optional = 1
+            (s.section LIKE '%+%' AND c.optional = 1)
+            -- OR if section does NOT contain '+' AND (either it doesn't match A1/B2-like pattern OR optional ≠ 1)
+            OR ( s.section NOT LIKE '%+%' AND ( s.section !~ '^[A-Z][0-9]+$' OR c.optional != 1))
+        )
+        ON CONFLICT DO NOTHING;
     `;
     const query2 = `
         SELECT course_id 
         FROM courses
-        WHERE class_per_week = 0.75
+        WHERE type = 1 AND class_per_week = 0.75 ;
     `;
     const client = await connect();
     try {
@@ -296,7 +311,7 @@ async function initializeCoursesSectionsTable() {
         await client.query(query);
         const result = await client.query(query2);
         const courses = result.rows.map(row => row.course_id);
-
+        
         // For 0.75 credit courses, remove subsection entries and add main section entries
         for (const courseId of courses) {
             // First, get the distinct main sections before deleting
