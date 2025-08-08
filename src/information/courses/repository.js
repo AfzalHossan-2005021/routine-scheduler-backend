@@ -72,6 +72,7 @@ export async function saveCourse(Course) {
   const from = Course.from;
   const to = Course.to;
   const level_term = Course.level_term;
+  const optional = Course.optional; 
   const assignedSections = Course.assignedSections || [];
 
   const client = await connect();
@@ -84,52 +85,34 @@ export async function saveCourse(Course) {
 
     // 1. Insert into all_courses table (existing logic)
     const allCoursesQuery = `
-      INSERT INTO all_courses (course_id, name, type, class_per_week, \"from\", \"to\", level_term)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO all_courses (course_id, name, type, class_per_week, \"from\", \"to\", level_term, optional)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       ON CONFLICT (course_id, level_term) DO UPDATE
       SET name = EXCLUDED.name,
           type = EXCLUDED.type,
           class_per_week = EXCLUDED.class_per_week,
           "from" = EXCLUDED."from",
           "to" = EXCLUDED."to",
-          level_term = EXCLUDED.level_term
+          level_term = EXCLUDED.level_term,
+          optional = EXCLUDED.optional
     `;
-    const allCoursesValues = [
-      course_id,
-      name,
-      type,
-      class_per_week,
-      from,
-      to,
-      level_term,
-    ];
-    const allCoursesResult = await client.query(
-      allCoursesQuery,
-      allCoursesValues
-    );
+    const allCoursesValues = [course_id, name, type, class_per_week, from, to, level_term, optional];
+    const allCoursesResult = await client.query(allCoursesQuery, allCoursesValues);
 
-    // 2. Insert into courses table
+    // 2. Insert into courses tableroutine-table
     const coursesQuery = `
-      INSERT INTO courses (course_id, name, type, session, class_per_week, \"from\", \"to\", level_term)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO courses (course_id, name, type, session, class_per_week, \"from\", \"to\", level_term, optional)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       ON CONFLICT (course_id, session) DO UPDATE
       SET name = EXCLUDED.name,
           type = EXCLUDED.type,
           class_per_week = EXCLUDED.class_per_week,
           "from" = EXCLUDED."from",
           "to" = EXCLUDED."to",
-          level_term = EXCLUDED.level_term
+          level_term = EXCLUDED.level_term,
+          optional = EXCLUDED.optional
     `;
-    const coursesValues = [
-      course_id,
-      name,
-      type,
-      currentSession,
-      class_per_week,
-      from,
-      to,
-      level_term,
-    ];
+    const coursesValues = [course_id, name, type, currentSession, class_per_week, from, to, level_term, optional];
     await client.query(coursesQuery, coursesValues);
 
     // 3. Insert into courses_sections table for assigned sections (for both Theory and Sessional courses)
@@ -209,6 +192,7 @@ export async function updateCourse(Course) {
   const to = Course.to;
   const teacher_credit = Course.teacher_credit;
   const level_term = Course.level_term;
+  const optional = Course.optional || 0; // Default to 0 if not provided
   const assignedSections = Course.assignedSections || [];
 
   // Get current session
@@ -222,8 +206,8 @@ export async function updateCourse(Course) {
     // 1. Update all_courses table
     const allCoursesQuery = `
       UPDATE all_courses
-      SET course_id=$1, name=$2, type=$3, class_per_week=$4, \"from\" = $5, \"to\" = $6, level_term = $7
-      WHERE course_id=$8
+      SET course_id=$1, name=$2, type=$3, class_per_week=$4, \"from\" = $5, \"to\" = $6, level_term = $7, optional = $8
+      WHERE course_id=$9
     `;
     const allCoursesValues = [
       course_id,
@@ -233,6 +217,7 @@ export async function updateCourse(Course) {
       from,
       to,
       level_term,
+      optional,
       course_id_old,
     ];
     const allCoursesResult = await client.query(
@@ -251,8 +236,8 @@ export async function updateCourse(Course) {
     // 2. Update courses table
     const coursesUpdateQuery = `
       UPDATE courses
-      SET course_id=$1, name=$2, type=$3, class_per_week=$4, \"from\" = $5, \"to\" = $6, level_term = $7
-      WHERE course_id=$8 AND session = $9
+      SET course_id=$1, name=$2, type=$3, class_per_week=$4, \"from\" = $5, \"to\" = $6, level_term = $7, optional = $8
+      WHERE course_id=$9 AND session = $10
     `;
     const coursesUpdateValues = [
       course_id,
@@ -262,6 +247,7 @@ export async function updateCourse(Course) {
       from,
       to,
       level_term,
+      optional,
       course_id_old,
       currentSession,
     ];
@@ -273,19 +259,10 @@ export async function updateCourse(Course) {
     // If course doesn't exist in courses table, insert it
     if (coursesUpdateResult.rowCount === 0) {
       const coursesInsertQuery = `
-        INSERT INTO courses (course_id, name, type, session, class_per_week, \"from\", \"to\", level_term)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO courses (course_id, name, type, session, class_per_week, \"from\", \"to\", level_term, optional)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       `;
-      const coursesInsertValues = [
-        course_id,
-        name,
-        type,
-        currentSession,
-        class_per_week,
-        from,
-        to,
-        level_term,
-      ];
+      const coursesInsertValues = [course_id, name, type, currentSession, class_per_week, from, to, level_term, optional];
       await client.query(coursesInsertQuery, coursesInsertValues);
     }
 
