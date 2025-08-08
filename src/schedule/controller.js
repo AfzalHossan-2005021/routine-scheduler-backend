@@ -15,6 +15,7 @@ import {
   getCourseSectionalSchedule,
   teacherContradictionDB,
   ensureEmailTemplateExists,
+  getTimeContradictionForTeacher,
 } from "./repository.js";
 import { createForm, getTemplate } from "../assignment/repository.js";
 import { HttpError } from "../config/error-handle.js";
@@ -251,6 +252,16 @@ export async function teacherContradiction(req, res, next) {
   try {
     const { batch, section, course_id } = req.params;
     const result = await teacherContradictionDB(batch, section, course_id);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getTimeContradictionForTeacherAPI(req, res, next) {
+  try {
+    const { initial, day, time } = req.params;
+    const result = await getTimeContradictionForTeacher(initial, day, time);
     res.status(200).json(result);
   } catch (err) {
     next(err);

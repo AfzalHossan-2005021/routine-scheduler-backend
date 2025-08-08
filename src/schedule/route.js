@@ -11,7 +11,8 @@ import {
   teacherContradiction,
   getCourseAllScheduleAPI,
   getCourseSectionalScheduleAPI,
-  getDepartmentalSessionalScheduleAPI
+  getDepartmentalSessionalScheduleAPI,
+  getTimeContradictionForTeacherAPI
 } from "./controller.js";
 
 const router = express.Router();
@@ -25,6 +26,7 @@ router.post("/sessional/:batch/:section/:department", setSessionalScheduleAPI);
 
 router.get("/all", getAllSchedule)
 router.get("/contradiction/teacher/:batch/:section/:course_id", teacherContradiction)
+router.get("/contradiction/time/:initial/:day/:time", getTimeContradictionForTeacherAPI);
 
 router.get("/theory/initiate", initiate);
 
