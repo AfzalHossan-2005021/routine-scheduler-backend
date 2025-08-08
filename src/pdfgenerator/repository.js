@@ -5,12 +5,17 @@ export async function routineForLvl(lvlTerm) {
     SELECT 
         sa.course_id,
         CASE
-            WHEN c.type = 0 OR c.class_per_week = 1.5 THEN sa.section
-            WHEN c.class_per_week = 0.75 THEN sa.section || '1/' || sa.section || '2'
+            WHEN sa.course_id = 'CSE400' THEN MIN(LEFT(sa.section, 1))
+            WHEN c.optional = 1 THEN MIN(sa.section)
+            WHEN c.class_per_week = 0.75 THEN MIN(sa.section) || '1/' || MIN(sa.section) || '2'
+            ELSE ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '+')
         END AS section,
         sa.day,
         MIN(sa.time) AS time,
-        sa.room_no AS room,
+        CASE
+          WHEN sa.course_id = 'CT' THEN ''
+          ELSE sa.room_no
+        END AS room,
         s.level_term,
         c.type,
         sa.teachers
@@ -24,15 +29,14 @@ export async function routineForLvl(lvlTerm) {
     WHERE s.level_term = $1
     GROUP BY 
         sa.course_id,
-        CASE
-            WHEN c.type = 0 OR c.class_per_week = 1.5 THEN sa.section
-            WHEN c.class_per_week = 0.75 THEN sa.section || '1/' || sa.section || '2'
-        END,
         sa.day,
+        sa.time,
         sa.room_no,
         s.level_term,
         c.type,
-        sa.teachers
+        c.class_per_week,
+        sa.teachers,
+        c.optional
     ORDER BY sa.day, time, sa.course_id, section;
     `;
   const values = [lvlTerm];
@@ -47,8 +51,9 @@ export async function routineForTeacher(initial) {
     SELECT 
       sa.course_id,
       CASE 
-        WHEN c.type = 0 OR c.class_per_week = 1.5 THEN ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '+')
+        WHEN c.optional = 1 THEN MIN(sa.section)
         WHEN c.class_per_week = 0.75 THEN MIN(sa.section) || '1/' || MIN(sa.section) || '2'
+        ELSE ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '+')
       END AS section,
       sa.day,
       sa.time,
@@ -58,7 +63,7 @@ export async function routineForTeacher(initial) {
     FROM schedule_assignment sa
     JOIN courses c ON sa.course_id = c.course_id
     WHERE $1 = ANY(sa.teachers)
-    GROUP BY sa.course_id, sa.day, sa.time, sa.room_no, c.type, sa.teachers, c.class_per_week
+    GROUP BY sa.course_id, sa.day, sa.time, sa.room_no, c.type, sa.teachers, c.class_per_week, c.optional
     ORDER BY sa.day, sa.time, sa.course_id, section
     `;
 
@@ -73,9 +78,10 @@ export async function routineForRoom(room) {
   const query = `
     SELECT 
         sa.course_id,
-        CASE 
-            WHEN c.type = 0 OR c.class_per_week = 1.5 THEN ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '+')
+        CASE
+            WHEN c.optional = 1 THEN MIN(sa.section)
             WHEN c.class_per_week = 0.75 THEN MIN(sa.section) || '1/' || MIN(sa.section) || '2'
+            ELSE ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '+')
         END AS section,
         sa.day,
         sa.time,
@@ -85,7 +91,8 @@ export async function routineForRoom(room) {
     JOIN courses c 
         ON sa.course_id = c.course_id
     WHERE sa.room_no = $1
-    GROUP BY sa.course_id, sa.day, sa.time, c.type, sa.teachers, c.class_per_week
+        AND sa.course_id != 'CT'
+    GROUP BY sa.course_id, sa.day, sa.time, c.type, sa.teachers, c.class_per_week, c.optional
     ORDER BY sa.day, sa.time, sa.course_id, section;
     `;
 
@@ -195,8 +202,9 @@ export async function routineForDeptLevelTermCourseDB(
     SELECT 
         sa.course_id,
         CASE 
-            WHEN c.type = 0 OR c.class_per_week = 1.5 THEN ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '+')
+            WHEN c.optional = 1 THEN MIN(sa.section)
             WHEN c.class_per_week = 0.75 THEN MIN(sa.section) || '1/' || MIN(sa.section) || '2'
+            ELSE ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '+')
         END AS section,
         sa.day,
         sa.time,
@@ -208,7 +216,7 @@ export async function routineForDeptLevelTermCourseDB(
         ON sa.course_id = c.course_id
     WHERE (c."from" = $1 OR c."to" = $1)
       AND sa.course_id = $2
-    GROUP BY sa.course_id, sa.day, sa.time, sa.room_no, sa.teachers, c.type, c.class_per_week
+    GROUP BY sa.course_id, sa.day, sa.time, sa.room_no, sa.teachers, c.type, c.class_per_week, c.optional
     ORDER BY sa.course_id, sa.day, sa.time, section;
     `;
 
@@ -220,16 +228,16 @@ export async function routineForDeptLevelTermCourseDB(
 }
 
 export async function getRoutine(type, key) {
-    const query = `
+  const query = `
     select url
     from routine_pdf
     where type = $1 and key = $2
-    `
-    const values = [type, key];
-    const client = await connect();
-    const results = await client.query(query, values);
-    client.release();
-    return results.rows[0];
+    `;
+  const values = [type, key];
+  const client = await connect();
+  const results = await client.query(query, values);
+  client.release();
+  return results.rows[0];
 }
 
 export async function saveRoutine(type, key, url) {

@@ -44,11 +44,10 @@ export async function getTheorySchedule(department, batch, section) {
     SELECT course_id, c.type, "day", "time", department, "section", c.class_per_week
     FROM schedule_assignment sa
     NATURAL JOIN courses c
-    WHERE department = $1 AND batch = $2 AND ("section" = $3 OR "section" LIKE $4)
-    AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    WHERE department = $1 AND batch = $2 AND STRPOS("section", $3) > 0
     ORDER BY "section"
   `;
-  const values = [department, batch, section, `${section}%`];
+  const values = [department, batch, section];
   const client = await connect();
   const results = await client.query(query, values);
   client.release();
@@ -77,9 +76,8 @@ export async function getTheorySchedule(department, batch, section) {
 
 export async function setTheorySchedule(batch, section, course, schedule) {
   // Accepts: batch (int), section (string), course (string or empty), schedule (array of {day, time})
-  const client = await connect();
   try {
-    await client.query("BEGIN");
+    let client = await connect();
     const deleteQuery = `
       DELETE FROM schedule_assignment
       WHERE batch = $1
@@ -90,14 +88,17 @@ export async function setTheorySchedule(batch, section, course, schedule) {
     for (const slot of schedule) {
       await client.query(deleteQuery, [batch, section, slot.day, slot.time]);
     }
+    client.release();
     if (course === "None" || course === "") {
       // Do nothing
     } else {
       // Insert each slot in schedule
       for (const slot of schedule) {
         // Insert new slot
+        client = await connect();
         const getDeptQuery = `SELECT "to" FROM courses WHERE course_id = $1`;
         const deptResult = await client.query(getDeptQuery, [course]);
+        client.release();
         const department = deptResult.rows[0].to;
         const teacherAssignments = await getTheoryTeacherAssignmentDB(
           course,
@@ -107,6 +108,7 @@ export async function setTheorySchedule(batch, section, course, schedule) {
           INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department, room_no, teachers)
           VALUES ($1, $2::varchar, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6::varchar, (SELECT room FROM sections WHERE batch = $1 AND section = $2::varchar AND department = $6::varchar), $7)
         `;
+        client = await connect();
         await client.query(insertQuery, [
           batch,
           section,
@@ -116,15 +118,12 @@ export async function setTheorySchedule(batch, section, course, schedule) {
           department,
           teacherAssignments,
         ]);
+        client.release();
       }
     }
-    await client.query("COMMIT");
     return true;
   } catch (e) {
-    await client.query("ROLLBACK");
     throw e;
-  } finally {
-    client.release();
   }
 }
 
@@ -150,6 +149,8 @@ export async function setSessionalSchedule(
   schedule
 ) {
   console.log(batch, section, department, schedule);
+
+  // check whether the course_id is optional or not
   const client = await connect();
   try {
     await client.query("BEGIN");
@@ -171,7 +172,10 @@ export async function setSessionalSchedule(
         schedule.time,
       ])
     ).rows;
-    if (db_courses.length === 0) {
+    if (
+      db_courses.length === 0 ||
+      (section.includes("+") && schedule.course_id != "None")
+    ) {
       const insert_query = `
         INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department)
         VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6)
@@ -193,6 +197,7 @@ export async function setSessionalSchedule(
           AND department = $3
           AND "day" = $4
           AND "time" = $5
+          AND course_id = $6
         `;
         await client.query(delete_query, [
           batch,
@@ -200,6 +205,7 @@ export async function setSessionalSchedule(
           department,
           schedule.day,
           schedule.time,
+          schedule.prev_course_id,
         ]);
       } else {
         const update_query = `

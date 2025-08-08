@@ -72,7 +72,7 @@ export async function saveCourse(Course) {
   const from = Course.from;
   const to = Course.to;
   const level_term = Course.level_term;
-  const optional = Course.optional; 
+  const optional = Course.optional;
   const assignedSections = Course.assignedSections || [];
 
   const client = await connect();
@@ -96,8 +96,20 @@ export async function saveCourse(Course) {
           level_term = EXCLUDED.level_term,
           optional = EXCLUDED.optional
     `;
-    const allCoursesValues = [course_id, name, type, class_per_week, from, to, level_term, optional];
-    const allCoursesResult = await client.query(allCoursesQuery, allCoursesValues);
+    const allCoursesValues = [
+      course_id,
+      name,
+      type,
+      class_per_week,
+      from,
+      to,
+      level_term,
+      optional,
+    ];
+    const allCoursesResult = await client.query(
+      allCoursesQuery,
+      allCoursesValues
+    );
 
     // 2. Insert into courses tableroutine-table
     const coursesQuery = `
@@ -112,7 +124,17 @@ export async function saveCourse(Course) {
           level_term = EXCLUDED.level_term,
           optional = EXCLUDED.optional
     `;
-    const coursesValues = [course_id, name, type, currentSession, class_per_week, from, to, level_term, optional];
+    const coursesValues = [
+      course_id,
+      name,
+      type,
+      currentSession,
+      class_per_week,
+      from,
+      to,
+      level_term,
+      optional,
+    ];
     await client.query(coursesQuery, coursesValues);
 
     // 3. Insert into courses_sections table for assigned sections (for both Theory and Sessional courses)
@@ -262,7 +284,17 @@ export async function updateCourse(Course) {
         INSERT INTO courses (course_id, name, type, session, class_per_week, \"from\", \"to\", level_term, optional)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       `;
-      const coursesInsertValues = [course_id, name, type, currentSession, class_per_week, from, to, level_term, optional];
+      const coursesInsertValues = [
+        course_id,
+        name,
+        type,
+        currentSession,
+        class_per_week,
+        from,
+        to,
+        level_term,
+        optional,
+      ];
       await client.query(coursesInsertQuery, coursesInsertValues);
     }
 
@@ -404,7 +436,7 @@ export async function removeCourse(course_id) {
 
 export async function getAllLab() {
   const query = `
-    SELECT cs.course_id, cs.section, cs.batch , c.name, s.level_term, s.department,c.class_per_week
+    SELECT cs.course_id, cs.section, cs.batch , c.name, s.level_term, s.department,c.class_per_week, c.optional
     FROM courses_sections cs
     JOIN courses c ON cs.course_id = c.course_id
     join sections s using (batch, section, department)
