@@ -230,7 +230,7 @@ async function generateData(rows, mergeSection) {
     if (room) acc[onlySec][day][time].room = room;
     if (course_id) acc[onlySec][day][time].course_id = course_id;
     if (section) acc[onlySec][day][time].section = section;
-    acc[onlySec][day][time].colspan = type === 0 ? 1 : 3;
+    acc[onlySec][day][time].colspan = type === 0 ? 1 : (course_id === "CSE400" ? 6 : 3); // CSE400 is a special case with colspan 6
 
     // Add a flag to determine whether to show section in the PDF
     // In case of room schedules or teacher schedules, always show section

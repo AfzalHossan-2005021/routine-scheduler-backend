@@ -9,7 +9,7 @@ export async function routineForLvl(lvlTerm) {
             WHEN c.class_per_week = 0.75 THEN sa.section || '1/' || sa.section || '2'
         END AS section,
         sa.day,
-        sa.time,
+        MIN(sa.time) AS time,
         sa.room_no AS room,
         s.level_term,
         c.type,
@@ -22,6 +22,18 @@ export async function routineForLvl(lvlTerm) {
     JOIN courses c 
         ON sa.course_id = c.course_id
     WHERE s.level_term = $1
+    GROUP BY 
+        sa.course_id,
+        CASE
+            WHEN c.type = 0 OR c.class_per_week = 1.5 THEN sa.section
+            WHEN c.class_per_week = 0.75 THEN sa.section || '1/' || sa.section || '2'
+        END,
+        sa.day,
+        sa.room_no,
+        s.level_term,
+        c.type,
+        sa.teachers
+    ORDER BY sa.day, time, sa.course_id, section;
     `;
   const values = [lvlTerm];
   const client = await connect();
