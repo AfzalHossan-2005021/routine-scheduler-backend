@@ -3,22 +3,30 @@ import { connect } from "../config/database.js";
 export async function routineForLvl(lvlTerm) {
   const query = `
     SELECT 
-        sa.course_id,
         CASE
-            WHEN sa.course_id = 'CSE400' THEN MIN(LEFT(sa.section, 1))
+            WHEN sa.course_id LIKE '%-I'  THEN REPLACE(sa.course_id, '-I', '')
+            WHEN sa.course_id LIKE '%-II' THEN REPLACE(sa.course_id, '-II', '')
+            ELSE sa.course_id
+        END AS course_id,
+
+        CASE
             WHEN c.optional = 1 THEN MIN(sa.section)
             WHEN c.class_per_week = 0.75 THEN MIN(sa.section) || '1/' || MIN(sa.section) || '2'
             ELSE ARRAY_TO_STRING(ARRAY_AGG(DISTINCT sa.section ORDER BY sa.section), '+')
         END AS section,
+
         sa.day,
         MIN(sa.time) AS time,
+
         CASE
-          WHEN sa.course_id = 'CT' THEN ''
-          ELSE sa.room_no
+            WHEN sa.course_id = 'CT' THEN ''
+            ELSE sa.room_no
         END AS room,
+
         s.level_term,
         c.type,
         sa.teachers
+
     FROM schedule_assignment sa
     JOIN sections s 
         ON sa.department = s.department 
@@ -30,14 +38,17 @@ export async function routineForLvl(lvlTerm) {
     GROUP BY 
         sa.course_id,
         sa.day,
-        sa.time,
         sa.room_no,
         s.level_term,
         c.type,
         c.class_per_week,
         sa.teachers,
         c.optional
-    ORDER BY sa.day, time, sa.course_id, section;
+    ORDER BY 
+        sa.day, 
+        time, 
+        sa.course_id, 
+        section;
     `;
   const values = [lvlTerm];
   const client = await connect();
@@ -49,7 +60,11 @@ export async function routineForLvl(lvlTerm) {
 export async function routineForTeacher(initial) {
   const query = `
     SELECT 
-      sa.course_id,
+      CASE
+        WHEN sa.course_id LIKE '%-I'  THEN REPLACE(sa.course_id, '-I', '')
+        WHEN sa.course_id LIKE '%-II' THEN REPLACE(sa.course_id, '-II', '')
+        ELSE sa.course_id
+      END AS course_id,
       CASE 
         WHEN c.optional = 1 THEN MIN(sa.section)
         WHEN c.class_per_week = 0.75 THEN MIN(sa.section) || '1/' || MIN(sa.section) || '2'
@@ -77,7 +92,11 @@ export async function routineForTeacher(initial) {
 export async function routineForRoom(room) {
   const query = `
     SELECT 
-        sa.course_id,
+        CASE
+          WHEN sa.course_id LIKE '%-I'  THEN REPLACE(sa.course_id, '-I', '')
+          WHEN sa.course_id LIKE '%-II' THEN REPLACE(sa.course_id, '-II', '')
+          ELSE sa.course_id
+        END AS course_id,
         CASE
             WHEN c.optional = 1 THEN MIN(sa.section)
             WHEN c.class_per_week = 0.75 THEN MIN(sa.section) || '1/' || MIN(sa.section) || '2'
@@ -200,7 +219,11 @@ export async function routineForDeptLevelTermCourseDB(
   // level_term is not incorporated in the query, it is for future use
   const query = `
     SELECT 
-        sa.course_id,
+        CASE
+          WHEN sa.course_id LIKE '%-I'  THEN REPLACE(sa.course_id, '-I', '')
+          WHEN sa.course_id LIKE '%-II' THEN REPLACE(sa.course_id, '-II', '')
+          ELSE sa.course_id
+        END AS course_id,
         CASE 
             WHEN c.optional = 1 THEN MIN(sa.section)
             WHEN c.class_per_week = 0.75 THEN MIN(sa.section) || '1/' || MIN(sa.section) || '2'
