@@ -479,7 +479,7 @@ export async function getSessionalCoursesByDeptLevelTerm(
   level_term
 ) {
   const query = `
-    SELECT course_id, name, class_per_week
+    SELECT course_id, name, class_per_week, optional
     FROM courses
     WHERE type = 1
     AND courses.to = $1
