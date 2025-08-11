@@ -110,9 +110,15 @@ async function createEmptySchedule() {
 
 async function generateData(rows, mergeSection) {
   const data = rows.reduce((acc, curr) => {
-    const { day, time, initial, room, course_id, section, type, teachers } =
-      curr;
+    let { day, time, initial, room, course_id, section, type, teachers } = curr;
+    // console.log("Processing row:", section);
     const onlySec = mergeSection ? "merged" : section.substr(0, 1);
+    if (section.includes("+")) {
+      section = section.split("+").sort().join("+");
+    } else {
+      // Use as is if only one part
+      section = section;
+    }
     if (!acc[onlySec])
       acc[onlySec] = {
         Saturday: {},
@@ -121,6 +127,9 @@ async function generateData(rows, mergeSection) {
         Tuesday: {},
         Wednesday: {},
       };
+
+    // console.log(acc);
+
     if (!acc[onlySec][day][time]) acc[onlySec][day][time] = {};
 
     // Create an array of courses for multiple courses in one slot
@@ -130,7 +139,7 @@ async function generateData(rows, mergeSection) {
 
     // Check if this is a new course to add
     const existingCourseIndex = acc[onlySec][day][time].courses.findIndex(
-      (c) => c.course_id === course_id && c.section === section
+      (c) => c.course_id === course_id && c.section.includes(section)
     );
 
     if (existingCourseIndex === -1) {
@@ -230,7 +239,8 @@ async function generateData(rows, mergeSection) {
     if (room) acc[onlySec][day][time].room = room;
     if (course_id) acc[onlySec][day][time].course_id = course_id;
     if (section) acc[onlySec][day][time].section = section;
-    acc[onlySec][day][time].colspan = type === 0 ? 1 : 3;
+    acc[onlySec][day][time].colspan =
+      type === 0 ? 1 : course_id === "CSE400" ? 6 : 3; // CSE400 is a special case with colspan 6
 
     // Add a flag to determine whether to show section in the PDF
     // In case of room schedules or teacher schedules, always show section
@@ -248,7 +258,7 @@ async function generateData(rows, mergeSection) {
         showSection = false;
       }
       // If it's like A1 or A2 in section A, show it
-      else if (section.length > 1 && section.charAt(0) === onlySec) {
+      else if (section.length > 1 && section.includes(onlySec)) {
         showSection = true;
       }
       // For completely different sections, show them
@@ -353,7 +363,7 @@ async function generateData(rows, mergeSection) {
 
           appointments[section][j].push(data[section][day][t]);
           i += data[section][day][t].colspan;
-          // console.log(data[section][day][t]);
+          // // console.log(data[section][day][t]);
         } else {
           appointments[section][j].push({
             colspan: 1,
@@ -508,7 +518,7 @@ async function handlePdfError(err, outputDir, next) {
       const dirPath = path.dirname(outputDir);
       if (!fs.existsSync(dirPath)) {
         fs.mkdirSync(dirPath, { recursive: true });
-        // console.log("Created missing directory:", dirPath);
+        // // console.log("Created missing directory:", dirPath);
       }
     } catch (e) {
       console.error("Failed to create directory:", e.message);
@@ -524,10 +534,27 @@ export async function generatePDF(req, res, next) {
 
   try {
     const rows = await routineForLvl(lvlTerm);
+
+    const modifiedRows = rows.flatMap((row) => {
+      if (row.section && row.section.includes("+")) {
+        const parts = row.section.split("+");
+        // Generate all rotations
+        return parts.map((_, idx) => {
+          const rotated = [...parts.slice(idx), ...parts.slice(0, idx)];
+          return { ...row, section: rotated.join("+") };
+        });
+      } else {
+        return [row];
+      }
+    });
+    // // console.log("Generating PDF for level-term:", lvlTerm, rows);
     const currentSession = await getCurrentSession();
 
-    const appointments = await generateData(rows);
+    const appointments = await generateData(modifiedRows);
+    // console.log("Appointments generated:", appointments);
     const sections = Object.keys(appointments).sort();
+
+    // // console.log("Sections found:", sections);
 
     const pdfData = [];
     for (const section of sections) {
@@ -578,7 +605,7 @@ export async function roomPDF(req, res, next) {
     const rows = await routineForRoom(room);
     const currentSession = await getCurrentSession();
 
-    const appointments = await generateData(rows);
+    const appointments = await generateData(rows, true);
     const sections = Object.keys(appointments).sort();
 
     const pdfData = [];
@@ -686,11 +713,26 @@ export async function generateAllLevelTermPDFs(req, res, next) {
         const rows = await routineForLvl(lvlTerm);
 
         // Get all sections for this level term
-        const allLevelTermSections = await getSectionsByLevelTerm(lvlTerm);
+        const allLevelTermSections = (
+          await getSectionsByLevelTerm(lvlTerm)
+        ).filter((section) => !section.section.includes("+"));
+
+        const modifiedRows = rows.flatMap((row) => {
+          if (row.section && row.section.includes("+")) {
+            const parts = row.section.split("+");
+            // Generate all rotations
+            return parts.map((_, idx) => {
+              const rotated = [...parts.slice(idx), ...parts.slice(0, idx)];
+              return { ...row, section: rotated.join("+") };
+            });
+          } else {
+            return [row];
+          }
+        });
 
         if (rows.length > 0) {
           // Level term has data - process normally
-          const appointments = await generateData(rows);
+          const appointments = await generateData(modifiedRows);
           const sections = Object.keys(appointments).sort();
           const existingSections = new Set(sections);
 
@@ -916,8 +958,10 @@ export async function generateAllRoomPDFs(req, res, next) {
 
         if (rows.length > 0) {
           // Room has data - process normally
-          const appointments = await generateData(rows);
+          const appointments = await generateData(rows, true);
           const sections = Object.keys(appointments).sort();
+
+          // console.log(sections);
 
           for (const section of sections) {
             const appointment = appointments[section];

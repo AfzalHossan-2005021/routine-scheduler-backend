@@ -209,11 +209,8 @@
                     position: relative;
                   "
                 >
-                  <div class="course-code">
-                    {{this.course_id}}{{#if this.section}}{{#if
-                    this.showSection}} ({{this.section}}){{/if}}{{/if}}
-                  </div>
-                  <div class="room-number">{{this.section}}</div>
+                  <div class="course-code">{{this.course_id}}</div>
+                  <div class="section-name">{{this.section}}</div>
                   {{#if this.initial}}
                   <div class="teacher-initials">[ {{this.initial}} ]</div>
                   {{/if}} {{#if ../this.level_term}}
