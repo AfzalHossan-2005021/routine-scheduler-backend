@@ -240,7 +240,7 @@ async function generateData(rows, mergeSection) {
     if (course_id) acc[onlySec][day][time].course_id = course_id;
     if (section) acc[onlySec][day][time].section = section;
     acc[onlySec][day][time].colspan =
-      type === 0 ? 1 : course_id === "CSE400" ? 6 : 3; // CSE400 is a special case with colspan 6
+      type === 0 ? 1 : course_id.includes("THESIS") ? 6 : 3; // CSE400 is a special case with colspan 6
 
     // Add a flag to determine whether to show section in the PDF
     // In case of room schedules or teacher schedules, always show section
@@ -540,6 +540,14 @@ export async function generatePDF(req, res, next) {
         const parts = row.section.split("+");
         // Generate all rotations
         return parts.map((_, idx) => {
+          if (row.course_id.includes("CSE400")) {
+            // Special case for CSE400, keep the order as is
+            return {
+              ...row,
+              course_id: "THESIS (" + row.level_term + ")",
+              section: parts[idx],
+            };
+          }
           const rotated = [...parts.slice(idx), ...parts.slice(0, idx)];
           return { ...row, section: rotated.join("+") };
         });
@@ -722,6 +730,14 @@ export async function generateAllLevelTermPDFs(req, res, next) {
             const parts = row.section.split("+");
             // Generate all rotations
             return parts.map((_, idx) => {
+              if (row.course_id.includes("CSE400")) {
+                // Special case for CSE400, keep the order as is
+                return {
+                  ...row,
+                  course_id: "THESIS (" + row.level_term + ")",
+                  section: parts[idx],
+                };
+              }
               const rotated = [...parts.slice(idx), ...parts.slice(0, idx)];
               return { ...row, section: rotated.join("+") };
             });
