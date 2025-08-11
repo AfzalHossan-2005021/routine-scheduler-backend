@@ -15,7 +15,7 @@ export async function getScheduleConfigs() {
       WHERE key IN ('times', 'days', 'possibleLabTimes')
     `;
     const results = await client.query(query);
-    
+
     // Process the results
     const configs = {};
     for (const row of results.rows) {
@@ -25,12 +25,13 @@ export async function getScheduleConfigs() {
         configs[row.key] = row.value;
       }
     }
-    
+
     // Set defaults if not found
     if (!configs.times) configs.times = [8, 9, 10, 11, 12, 1, 2, 3, 4];
-    if (!configs.days) configs.days = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"];
+    if (!configs.days)
+      configs.days = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"];
     if (!configs.possibleLabTimes) configs.possibleLabTimes = [8, 11, 2];
-    
+
     return configs;
   } finally {
     client.release();
@@ -40,24 +41,25 @@ export async function getScheduleConfigs() {
 export async function getTheorySchedule(department, batch, section) {
   // This query gets schedules for both the main section and any subsections
   const query = `
-    SELECT course_id, c.type, "day", "time", department, "section", c.class_per_week
+    SELECT course_id, c.type, "day", "time", department, "section", c.class_per_week, c.optional
     FROM schedule_assignment sa
     NATURAL JOIN courses c
-    WHERE department = $1 AND batch = $2 AND ("section" = $3 OR "section" LIKE $4)
-    AND "session" = (SELECT value FROM configs WHERE key='CURRENT_SESSION')
+    WHERE department = $1 AND batch = $2 AND STRPOS("section", $3) > 0
     ORDER BY "section"
   `;
-  const values = [department, batch, section, `${section}%`];
+  const values = [department, batch, section];
   const client = await connect();
   const results = await client.query(query, values);
   client.release();
 
   // Organize results with subsections grouped under their main section
-  const mainSectionSchedules = results.rows.filter(row => row.section === section);
+  const mainSectionSchedules = results.rows.filter(
+    (row) => row.section === section
+  );
   const subsectionSchedules = {};
 
   // Group subsection schedules
-  results.rows.forEach(row => {
+  results.rows.forEach((row) => {
     if (row.section !== section) {
       if (!subsectionSchedules[row.section]) {
         subsectionSchedules[row.section] = [];
@@ -68,15 +70,14 @@ export async function getTheorySchedule(department, batch, section) {
 
   return {
     mainSection: mainSectionSchedules,
-    subsections: subsectionSchedules
+    subsections: subsectionSchedules,
   };
 }
 
 export async function setTheorySchedule(batch, section, course, schedule) {
   // Accepts: batch (int), section (string), course (string or empty), schedule (array of {day, time})
-  const client = await connect();
   try {
-    await client.query("BEGIN");
+    let client = await connect();
     const deleteQuery = `
       DELETE FROM schedule_assignment
       WHERE batch = $1
@@ -87,36 +88,48 @@ export async function setTheorySchedule(batch, section, course, schedule) {
     for (const slot of schedule) {
       await client.query(deleteQuery, [batch, section, slot.day, slot.time]);
     }
+    client.release();
     if (course === "None" || course === "") {
       // Do nothing
     } else {
       // Insert each slot in schedule
       for (const slot of schedule) {
         // Insert new slot
+        client = await connect();
         const getDeptQuery = `SELECT "to" FROM courses WHERE course_id = $1`;
         const deptResult = await client.query(getDeptQuery, [course]);
+        client.release();
         const department = deptResult.rows[0].to;
-        const teacherAssignments = await getTheoryTeacherAssignmentDB(course, section);
+        const teacherAssignments = await getTheoryTeacherAssignmentDB(
+          course,
+          section
+        );
         const insertQuery = `
           INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department, room_no, teachers)
           VALUES ($1, $2::varchar, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6::varchar, (SELECT room FROM sections WHERE batch = $1 AND section = $2::varchar AND department = $6::varchar), $7)
         `;
-        await client.query(insertQuery, [batch, section, course, slot.day, slot.time, department, teacherAssignments]);
+        client = await connect();
+        await client.query(insertQuery, [
+          batch,
+          section,
+          course,
+          slot.day,
+          slot.time,
+          department,
+          teacherAssignments,
+        ]);
+        client.release();
       }
     }
-    await client.query("COMMIT");
     return true;
   } catch (e) {
-    await client.query("ROLLBACK");
     throw e;
-  } finally {
-    client.release();
   }
 }
 
 export async function getSessionalSchedule(batch, section) {
   const query = `
-    SELECT course_id, "day", "time", department, "section"
+    SELECT course_id, "day", "time", department, "section", c.optional
     FROM schedule_assignment sa
     NATURAL JOIN courses c
     WHERE batch = $1 AND "section" = $2 AND type = 1
@@ -129,8 +142,15 @@ export async function getSessionalSchedule(batch, section) {
   return results.rows;
 }
 
-export async function setSessionalSchedule(batch, section, department, schedule) {
+export async function setSessionalSchedule(
+  batch,
+  section,
+  department,
+  schedule
+) {
   console.log(batch, section, department, schedule);
+
+  // check whether the course_id is optional or not
   const client = await connect();
   try {
     await client.query("BEGIN");
@@ -143,15 +163,33 @@ export async function setSessionalSchedule(batch, section, department, schedule)
       AND "day" = $4
       AND "time" = $5
     `;
-    const db_courses = (await client.query(course_id_query, [batch, section, department, schedule.day, schedule.time])).rows;
-    if(db_courses.length === 0) {
+    const db_courses = (
+      await client.query(course_id_query, [
+        batch,
+        section,
+        department,
+        schedule.day,
+        schedule.time,
+      ])
+    ).rows;
+    if (
+      db_courses.length === 0 ||
+      (section.includes("+") && schedule.course_id != "None")
+    ) {
       const insert_query = `
         INSERT INTO schedule_assignment (batch, "section", "session", course_id, "day", "time", department)
         VALUES ($1, $2, (SELECT value FROM configs WHERE key='CURRENT_SESSION'), $3, $4, $5, $6)
       `;
-      await client.query(insert_query, [batch, section, schedule.course_id, schedule.day, schedule.time, department]);
+      await client.query(insert_query, [
+        batch,
+        section,
+        schedule.course_id,
+        schedule.day,
+        schedule.time,
+        department,
+      ]);
     } else {
-      if(schedule.course_id === "None") {
+      if (schedule.course_id === "None") {
         const delete_query = `
           DELETE FROM schedule_assignment
           WHERE batch = $1
@@ -159,8 +197,16 @@ export async function setSessionalSchedule(batch, section, department, schedule)
           AND department = $3
           AND "day" = $4
           AND "time" = $5
+          AND course_id = $6
         `;
-        await client.query(delete_query, [batch, section, department, schedule.day, schedule.time]);
+        await client.query(delete_query, [
+          batch,
+          section,
+          department,
+          schedule.day,
+          schedule.time,
+          schedule.prev_course_id,
+        ]);
       } else {
         const update_query = `
           UPDATE schedule_assignment
@@ -171,7 +217,14 @@ export async function setSessionalSchedule(batch, section, department, schedule)
           AND "day" = $5
           AND "time" = $6
         `;
-        await client.query(update_query, [schedule.course_id, batch, section, department, schedule.day, schedule.time]);
+        await client.query(update_query, [
+          schedule.course_id,
+          batch,
+          section,
+          department,
+          schedule.day,
+          schedule.time,
+        ]);
       }
     }
     await client.query("COMMIT");
@@ -231,7 +284,7 @@ export async function getAllScheduleDB() {
 
 export async function getDepartmentalSessionalSchedule() {
   const query = `
-    SELECT sa.course_id, sa.batch, sa."section", sa."day", sa."time", sa.department, c.class_per_week
+    SELECT sa.course_id, sa.batch, sa."section", sa."day", sa."time", sa.department, c.class_per_week, c.optional
     FROM schedule_assignment sa
     JOIN courses c ON sa.course_id = c.course_id
     WHERE sa.course_id LIKE 'CSE%'
@@ -272,6 +325,43 @@ export async function teacherContradictionDB(batch, section, course_id) {
   return results;
 }
 
+export async function getTimeContradictionForTeacher(initial, day, time) {
+  const { possibleLabTimes } = await getScheduleConfigs();
+  const query = `
+    SELECT sa.*, $1 AS initial
+    FROM schedule_assignment sa
+    WHERE $1 = ANY(sa.teachers)
+    AND sa."day" = $2
+    AND sa."time" = $3
+  `;
+  const client = await connect();
+  const results = await client.query(query, [initial, day, time]);
+  console.log("Results for", initial, day, time, results.rows);
+
+  if (!possibleLabTimes.includes(time)) {
+    const nearestLabTime = possibleLabTimes.reduce((prev, curr) => {
+      return Math.abs(curr - time) < Math.abs(prev - time) ? curr : prev;
+    }, possibleLabTimes[0]);
+    console.log("Nearest lab time for", time, "is", nearestLabTime);
+    const labQuery = `
+      SELECT sa.*, $1 AS initial
+      FROM schedule_assignment sa
+      WHERE $1 = ANY(sa.teachers)
+      AND sa."day" = $2
+      AND sa."time" = $3
+      AND sa.course_id ~ '[02468]$'
+    `;
+    const labResults = await client.query(labQuery, [
+      initial,
+      day,
+      nearestLabTime,
+    ]);
+    results.rows.push(...labResults.rows);
+  }
+  client.release();
+  return results.rows;
+}
+
 export async function ensureEmailTemplateExists(type) {
   const client = await connect();
 
@@ -283,13 +373,16 @@ export async function ensureEmailTemplateExists(type) {
     // If the template doesn't exist or has no value, create it
     if (checkResult.rows.length === 0) {
       if (type == "SCHEDULE_EMAIL") {
-        const insertQuery = "INSERT INTO configs (key, value) VALUES ('SCHEDULE_EMAIL', 'Please fill out your theory schedule preferences. Click the link below to access the form.')";
+        const insertQuery =
+          "INSERT INTO configs (key, value) VALUES ('SCHEDULE_EMAIL', 'Please fill out your theory schedule preferences. Click the link below to access the form.')";
         await client.query(insertQuery);
       } else if (type == "THEORY_EMAIL") {
-        const insertQuery = "INSERT INTO configs (key, value) VALUES ('THEORY_EMAIL', 'Please fill out your theory course preferences. Click the link below to access the form.')";
+        const insertQuery =
+          "INSERT INTO configs (key, value) VALUES ('THEORY_EMAIL', 'Please fill out your theory course preferences. Click the link below to access the form.')";
         await client.query(insertQuery);
       } else if (type == "SESSIONAL_EMAIL") {
-        const insertQuery = "INSERT INTO configs (key, value) VALUES ('SESSIONAL_EMAIL', 'Please fill out your sessional course preferences. Click the link below to access the form.')";
+        const insertQuery =
+          "INSERT INTO configs (key, value) VALUES ('SESSIONAL_EMAIL', 'Please fill out your sessional course preferences. Click the link below to access the form.')";
         await client.query(insertQuery);
       } else {
         return false;
@@ -297,13 +390,16 @@ export async function ensureEmailTemplateExists(type) {
       return true;
     } else if (!checkResult.rows[0].value) {
       if (type == "SCHEDULE_EMAIL") {
-        const updateQuery = "UPDATE configs SET value = 'Please fill out your theory schedule preferences. Click the link below to access the form.' WHERE key = 'SCHEDULE_EMAIL'";
+        const updateQuery =
+          "UPDATE configs SET value = 'Please fill out your theory schedule preferences. Click the link below to access the form.' WHERE key = 'SCHEDULE_EMAIL'";
         await client.query(updateQuery);
       } else if (type == "THEORY_EMAIL") {
-        const updateQuery = "UPDATE configs SET value = 'Please fill out your theory course preferences. Click the link below to access the form.' WHERE key = 'THEORY_EMAIL'";
+        const updateQuery =
+          "UPDATE configs SET value = 'Please fill out your theory course preferences. Click the link below to access the form.' WHERE key = 'THEORY_EMAIL'";
         await client.query(updateQuery);
       } else if (type == "SESSIONAL_EMAIL") {
-        const updateQuery = "UPDATE configs SET value = 'Please fill out your sessional course preferences. Click the link below to access the form.' WHERE key = 'SESSIONAL_EMAIL'";
+        const updateQuery =
+          "UPDATE configs SET value = 'Please fill out your sessional course preferences. Click the link below to access the form.' WHERE key = 'SESSIONAL_EMAIL'";
         await client.query(updateQuery);
       } else {
         return false;

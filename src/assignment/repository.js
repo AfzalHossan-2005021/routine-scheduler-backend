@@ -1039,15 +1039,11 @@ export async function calculateTeacherTotalCredit(initial) {
 
     // Add sessional credits
     for (const sessional of sessionalResult.rows) {
-      if (initial === "MMA") {
-        console.log(
-          "Sessional Course:",
-          sessional.course_id,
-          "Credit:",
-          sessional.teacher_credit
-        );
+      if (sessional.class_per_week === 0.75){
+          totalCredit += 4 * (sessional.class_per_week || 0);
+      }else{
+          totalCredit += 2 * (sessional.class_per_week || 0);
       }
-      totalCredit += 2 * (sessional.class_per_week || 0);
     }
 
     // Get all theory assignments for the teacher
