@@ -41,7 +41,7 @@ export async function getScheduleConfigs() {
 export async function getTheorySchedule(department, batch, section) {
   // This query gets schedules for both the main section and any subsections
   const query = `
-    SELECT course_id, c.type, "day", "time", department, "section", c.class_per_week
+    SELECT course_id, c.type, "day", "time", department, "section", c.class_per_week, c.optional
     FROM schedule_assignment sa
     NATURAL JOIN courses c
     WHERE department = $1 AND batch = $2 AND STRPOS("section", $3) > 0
@@ -129,7 +129,7 @@ export async function setTheorySchedule(batch, section, course, schedule) {
 
 export async function getSessionalSchedule(batch, section) {
   const query = `
-    SELECT course_id, "day", "time", department, "section"
+    SELECT course_id, "day", "time", department, "section", c.optional
     FROM schedule_assignment sa
     NATURAL JOIN courses c
     WHERE batch = $1 AND "section" = $2 AND type = 1
@@ -284,7 +284,7 @@ export async function getAllScheduleDB() {
 
 export async function getDepartmentalSessionalSchedule() {
   const query = `
-    SELECT sa.course_id, sa.batch, sa."section", sa."day", sa."time", sa.department, c.class_per_week
+    SELECT sa.course_id, sa.batch, sa."section", sa."day", sa."time", sa.department, c.class_per_week, c.optional
     FROM schedule_assignment sa
     JOIN courses c ON sa.course_id = c.course_id
     WHERE sa.course_id LIKE 'CSE%'
